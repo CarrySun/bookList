@@ -1,0 +1,117 @@
+<?xml version='1.0' encoding='utf-8'?>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-tw" xml:lang="zh-tw">
+  <head>
+    <title>1.5 最长回文子串 | 编程之法：面试和算法心得</title>
+    <meta name="description" content=""/>
+    <meta name="generator" content="GitBook 2.6.5"/>
+    <meta name="author" content="wizardforcel"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css"/>
+<link href="page_styles.css" rel="stylesheet" type="text/css"/>
+</head>
+  <body class="dir">
+        
+        
+<div class="page">
+    
+        <h1 class="book-chapter" id="calibre_toc_10">1.5 最长回文子串</h1>
+        
+            <div class="section" id="section-">
+            
+                <h2 id="最长回文子串" class="calibre8">最长回文子串</h2>
+<h3 id="题目描述" class="calibre9">题目描述</h3>
+<p class="calibre6">给定一个字符串，求它的最长回文子串的长度。</p>
+<h3 id="分析与解法" class="calibre9">分析与解法</h3>
+<p class="calibre6">最容易想到的办法是枚举所有的子串，分别判断其是否为回文。这个思路初看起来是正确的，但却做了很多无用功，如果一个长的子串包含另一个短一些的子串，那么对子串的回文判断其实是不需要的。</p>
+<h4 id="解法一" class="calibre16">解法一</h4>
+<p class="calibre6">那么如何高效的进行判断呢？我们想想，如果一段字符串是回文，那么以某个字符为中心的前缀和后缀都是相同的，例如以一段回文串“aba”为例，以b为中心，它的前缀和后缀都是相同的，都是a。</p>
+<p class="calibre6">那么，我们是否可以可以枚举中心位置，然后再在该位置上用扩展法，记录并更新得到的最长的回文长度呢？答案是肯定的，参考代码如下：</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c"><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">LongestPalindrome</span><span class="hljs-params">(<span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *s, <span class="hljs-keyword">int</span> n)</span>
+</span>{
+    <span class="hljs-keyword">int</span> i, j, max,c;
+    <span class="hljs-keyword">if</span> (s == <span class="hljs-params">0</span> || n &lt; <span class="hljs-params">1</span>)
+        <span class="hljs-keyword">return</span> <span class="hljs-params">0</span>;
+    max = <span class="hljs-params">0</span>;
+
+    <span class="hljs-keyword">for</span> (i = <span class="hljs-params">0</span>; i &lt; n; ++i) { <span class="hljs-title">// i is the middle point of the palindrome  </span>
+        <span class="hljs-keyword">for</span> (j = <span class="hljs-params">0</span>; (i - j &gt;= <span class="hljs-params">0</span>) &amp;&amp; (i + j &lt; n); ++j){ <span class="hljs-title">// if the length of the palindrome is odd  </span>
+            <span class="hljs-keyword">if</span> (s[i - j] != s[i + j])
+                <span class="hljs-keyword">break</span>;
+            c = j * <span class="hljs-params">2</span> + <span class="hljs-params">1</span>;
+        }
+        <span class="hljs-keyword">if</span> (c &gt; max)
+            max = c;
+        <span class="hljs-keyword">for</span> (j = <span class="hljs-params">0</span>; (i - j &gt;= <span class="hljs-params">0</span>) &amp;&amp; (i + j + <span class="hljs-params">1</span> &lt; n); ++j){ <span class="hljs-title">// for the even case  </span>
+            <span class="hljs-keyword">if</span> (s[i - j] != s[i + j + <span class="hljs-params">1</span>])
+                <span class="hljs-keyword">break</span>;
+            c = j * <span class="hljs-params">2</span> + <span class="hljs-params">2</span>;
+        }
+        <span class="hljs-keyword">if</span> (c &gt; max)
+            max = c;
+    }
+    <span class="hljs-keyword">return</span> max;
+}
+</code></pre>
+<p class="calibre6">代码稍微难懂一点的地方就是内层的两个 for 循环，它们分别对于以 i 为中心的，长度为奇数和偶数的两种情况，整个代码遍历中心位置 i 并以之扩展，找出最长的回文。</p>
+<h4 id="解法二、on解法" class="calibre16">解法二、O(N)解法</h4>
+<p class="calibre6">在上文的解法一：枚举中心位置中，我们需要特别考虑字符串的长度是奇数还是偶数，所以导致我们在编写代码实现的时候要把奇数和偶数的情况分开编写，是否有一种方法，可以不用管长度是奇数还是偶数，而统一处理呢？比如是否能把所有的情况全部转换为奇数处理？</p>
+<p class="calibre6">答案还是肯定的。这就是下面我们将要看到的Manacher算法，且这个算法求最长回文子串的时间复杂度是线性O(N)的。</p>
+<p class="calibre6">首先通过在每个字符的两边都插入一个特殊的符号，将所有可能的奇数或偶数长度的回文子串都转换成了奇数长度。比如 abba 变成 #a#b#b#a#， aba变成 #a#b#a#。 </p>
+<p class="calibre6">此外，为了进一步减少编码的复杂度，可以在字符串的开始加入另一个特殊字符，这样就不用特殊处理越界问题，比如$#a#b#a#。</p>
+<p class="calibre6">以字符串12212321为例，插入#和$这两个特殊符号，变成了 S[] = "$#1#2#2#1#2#3#2#1#"，然后用一个数组 P[i] 来记录以字符S[i]为中心的最长回文子串向左或向右扩张的长度（包括S[i]）。</p>
+<p class="calibre6">比如S和P的对应关系：</p>
+<ul class="calibre10">
+<li class="calibre11">S  #  1  #  2  #  2  #  1  #  2  #  3  #  2  #  1  #</li>
+<li class="calibre11">P  1  2  1  2  5  2  1  4  1  2  1  6  1  2  1  2  1</li>
+</ul>
+<p class="calibre6">可以看出，P[i]-1正好是原字符串中最长回文串的总长度，为5。</p>
+<p class="calibre6">接下来怎么计算P[i]呢？Manacher算法增加两个辅助变量id和mx，其中id表示最大回文子串中心的位置，mx则为id+P[id]，也就是最大回文子串的边界。得到一个很重要的结论：</p>
+<ul class="calibre10">
+<li class="calibre11">如果mx &gt; i，那么P[i] &gt;= Min(P[2 * id - i], mx - i)</li>
+</ul>
+<p class="calibre6">C代码如下：</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c"><span class="hljs-title">//mx &gt; i，那么P[i] &gt;= MIN(P[2 * id - i], mx - i)</span>
+<span class="hljs-title">//故谁小取谁</span>
+<span class="hljs-keyword">if</span> (mx - i &gt; P[<span class="hljs-params">2</span>*id - i])
+    P[i] = P[<span class="hljs-params">2</span>*id - i];
+<span class="hljs-keyword">else</span>  <span class="hljs-title">//mx-i &lt;= P[2*id - i]</span>
+    P[i] = mx - i;
+</code></pre>
+<p class="calibre6">下面，令j = 2*id - i，也就是说j是i关于id的对称点。</p>
+<p class="calibre6">当 mx - i &gt; P[j] 的时候，以S[j]为中心的回文子串包含在以S[id]为中心的回文子串中，由于i和j对称，以S[i]为中心的回文子串必然包含在以S[id]为中心的回文子串中，所以必有P[i] = P[j]；</p>
+<p class="calibre6"><img src="de740b52.png" alt="" class="calibre19"/></p>
+<p class="calibre6">当 P[j] &gt;= mx - i 的时候，以S[j]为中心的回文子串不一定完全包含于以S[id]为中心的回文子串中，但是基于对称性可知，下图中两个绿框所包围的部分是相同的，也就是说以S[i]为中心的回文子串，其向右至少会扩张到mx的位置，也就是说 P[i] &gt;= mx - i。至于mx之后的部分是否对称，再具体匹配。</p>
+<p class="calibre6"><img src="9a20ddcb.png" alt="" class="calibre19"/></p>
+<p class="calibre6">此外，对于 mx &lt;= i 的情况，因为无法对 P[i]做更多的假设，只能让P[i] = 1，然后再去匹配。</p>
+<p class="calibre6">综上，关键代码如下：</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c"><span class="hljs-title">//输入，并处理得到字符串s</span>
+<span class="hljs-keyword">int</span> p[<span class="hljs-params">1000</span>], mx = <span class="hljs-params">0</span>, id = <span class="hljs-params">0</span>;
+<span class="hljs-params">memset</span>(p, <span class="hljs-params">0</span>, <span class="hljs-keyword">sizeof</span>(p));
+<span class="hljs-keyword">for</span> (i = <span class="hljs-params">1</span>; s[i] != <span class="hljs-string">'\0'</span>; i++) 
+{
+    p[i] = mx &gt; i ? min(p[<span class="hljs-params">2</span> * id - i], mx - i) : <span class="hljs-params">1</span>;
+    <span class="hljs-keyword">while</span> (s[i + p[i]] == s[i - p[i]]) 
+        p[i]++;
+    <span class="hljs-keyword">if</span> (i + p[i] &gt; mx) 
+    {
+        mx = i + p[i];
+        id = i;
+    }
+}
+<span class="hljs-title">//找出p[i]中最大的</span>
+</code></pre>
+<p class="calibre6">此Manacher算法使用id、mx做配合，可以在每次循环中，直接对P[i]的快速赋值，从而在计算以i为中心的回文子串的过程中，不必每次都从1开始比较，减少了比较次数，最终使得求解最长回文子串的长度达到线性O(N)的时间复杂度。</p>
+<p class="calibre6">参考：<a href="http://www.felix021.com/blog/read.php?2040" target="_blank" class="pcalibre2 pcalibre1 calibre7 pcalibre">http://www.felix021.com/blog/read.php?2040</a> 。另外，这篇文章也不错：<a href="http://leetcode.com/2011/11/longest-palindromic-substring-part-ii.html" target="_blank" class="pcalibre2 pcalibre1 calibre7 pcalibre">http://leetcode.com/2011/11/longest-palindromic-substring-part-ii.html</a> 。</p>
+
+            
+            </div>
+        
+    
+</div>
+
+        
+        
+    
+    
+
+</body></html>

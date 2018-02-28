@@ -1,0 +1,106 @@
+<?xml version='1.0' encoding='utf-8'?>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-tw" xml:lang="zh-tw">
+  <head>
+    <title>2.5 跳台阶 | 编程之法：面试和算法心得</title>
+    <meta name="description" content=""/>
+    <meta name="generator" content="GitBook 2.6.5"/>
+    <meta name="author" content="wizardforcel"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css"/>
+<link href="page_styles.css" rel="stylesheet" type="text/css"/>
+</head>
+  <body class="dir">
+        
+        
+<div class="page">
+    
+        <h1 class="book-chapter" id="calibre_toc_19">2.5 跳台阶</h1>
+        
+            <div class="section" id="section-">
+            
+                <h2 id="跳台阶问题" class="calibre8">跳台阶问题</h2>
+<h3 id="题目描述" class="calibre9">题目描述</h3>
+<p class="calibre6">一个台阶总共有n 级，如果一次可以跳1 级，也可以跳2 级。</p>
+<p class="calibre6">求总共有多少总跳法，并分析算法的时间复杂度。</p>
+<h3 id="分析与解法" class="calibre9">分析与解法</h3>
+<h4 id="解法一" class="calibre16">解法一</h4>
+<p class="calibre6">首先考虑最简单的情况。如果只有1级台阶，那显然只有一种跳法。如果有2级台阶，那就有两种跳的方法了：一种是分两次跳，每次跳1级；另外一种就是一次跳2级。</p>
+<p class="calibre6">现在我们再来讨论一般情况。我们把n级台阶时的跳法看成是n的函数，记为f(n)。</p>
+<ul class="calibre10">
+<li class="calibre11">当n&gt;2时，第一次跳的时候就有两种不同的选择：<ul class="calibre13">
+<li class="calibre11">一是第一次只跳1级，此时跳法数目等于后面剩下的n-1级台阶的跳法数目，即为f(n-1)；</li>
+<li class="calibre11">另外一种选择是第一次跳2级，此时跳法数目等于后面剩下的n-2级台阶的跳法数目，即为f(n-2)。</li>
+</ul>
+</li>
+</ul>
+<p class="calibre6">因此n级台阶时的不同跳法的总数f(n)=f(n-1)+f(n-2)。</p>
+<p class="calibre6">我们把上面的分析用一个公式总结如下：</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c">        /  1                             n = 1
+f(n)=      2                             n = 2
+        \  f(n-1) + f(n-2)               n &gt; 2
+</code></pre><p class="calibre6">原来上述问题就是我们平常所熟知的Fibonacci数列问题。可编写代码，如下：</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c"><span class="hljs-function"><span class="hljs-keyword">long</span> <span class="hljs-keyword">long</span> <span class="hljs-title">Fibonacci</span><span class="hljs-params">(<span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">int</span> n)</span>
+</span>{
+    <span class="hljs-keyword">int</span> result[<span class="hljs-params">3</span>] = {<span class="hljs-params">0</span>, <span class="hljs-params">1</span>, <span class="hljs-params">2</span>};
+    <span class="hljs-keyword">if</span> (n &lt;= <span class="hljs-params">2</span>)
+        <span class="hljs-keyword">return</span> result[n];
+
+    <span class="hljs-keyword">return</span> Fibonacci(n - <span class="hljs-params">1</span>) + Fibonacci(n - <span class="hljs-params">2</span>);
+}
+</code></pre>
+<p class="calibre6">那么，如果一个人上台阶可以一次上1个，2个，或者3个呢？这个时候，公式是这样写的：</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c">        / 1                                      n = 1
+f(n)=     2                                      n = 2
+          4                                      n = 3       //111, 12, 21, 3
+        \ f(n-1)+f(n-2)+f(n-3)                   n &gt; 3
+</code></pre><h4 id="解法二" class="calibre16">解法二</h4>
+<p class="calibre6">解法一用的递归的方法有许多重复计算的工作，事实上，我们可以从后往前推，一步步利用之前计算的结果递推。</p>
+<p class="calibre6">初始化时，dp[0]=dp[1]=1，然后递推计算即可：dp[n] = dp[n-1] + dp[n-2]。</p>
+<p class="calibre6">参考代码如下：</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c"><span class="hljs-title">//1, 1, 2, 3, 5, 8, 13, 21..</span>
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">ClimbStairs</span><span class="hljs-params">(<span class="hljs-keyword">int</span> n)</span>
+</span>{
+    <span class="hljs-keyword">int</span> dp[<span class="hljs-params">3</span>] = { <span class="hljs-params">1</span>, <span class="hljs-params">1</span> };
+    <span class="hljs-keyword">if</span> (n &lt; <span class="hljs-params">2</span>)
+    {
+        <span class="hljs-keyword">return</span> <span class="hljs-params">1</span>;
+    }
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-params">2</span>; i &lt;= n; i++)
+    {
+        dp[<span class="hljs-params">2</span>] = dp[<span class="hljs-params">0</span>] + dp[<span class="hljs-params">1</span>];
+        dp[<span class="hljs-params">0</span>] = dp[<span class="hljs-params">1</span>];
+        dp[<span class="hljs-params">1</span>] = dp[<span class="hljs-params">2</span>];
+    }
+    <span class="hljs-keyword">return</span> dp[<span class="hljs-params">2</span>];
+}
+</code></pre>
+<h3 id="举一反三" class="calibre9">举一反三</h3>
+<p class="calibre6">1、兔子繁殖问题</p>
+<p class="calibre6">13世纪意大利数学家斐波那契在他的《算盘书》中提出这样一个问题：有人想知道一年内一对兔子可繁殖成多少对，便筑了一道围墙把一对兔子关在里面。已知一对兔子每一个月可以生一对小兔子，而一对兔子出生后.第三个月开始生小兔子假如一年内没有发生死亡，则一对兔子一年内能繁殖成多少对？</p>
+<p class="calibre6">分析：这就是斐波那契数列的由来，本节的跳台阶问题便是此问题的变形，只是换了种表述形式。</p>
+<p class="calibre6">2、换硬币问题。</p>
+<p class="calibre6">想兑换100元钱，有1,2,5,10四种钱，问总共有多少兑换方法。</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c">const int N = 100;
+int dimes[] = { 1, 2, 5, 10 };
+int arr[N + 1] = { 1 };
+for (int i = 0; i &lt; sizeof(dimes) / sizeof(int); ++i)
+{
+    for (int j = dimes[i]; j &lt;= N; ++j)
+    {
+        arr[j] += arr[j - dimes[i]];
+    }
+}
+</code></pre><p class="calibre6">此问题还有一个变形，就是打印出路径目前只想到要使用递归来解决这个问题。对此，利用一个vector来保存路径，每进入一层，push_back一个路径，每退出一层，pop_back一个路径。</p>
+
+            
+            </div>
+        
+    
+</div>
+
+        
+        
+    
+    
+
+</body></html>

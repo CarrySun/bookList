@@ -1,0 +1,51 @@
+<?xml version='1.0' encoding='utf-8'?>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-tw" xml:lang="zh-tw">
+  <head>
+    <title>6.11 倒排索引 | 编程之法：面试和算法心得</title>
+    <meta name="description" content=""/>
+    <meta name="generator" content="GitBook 2.6.5"/>
+    <meta name="author" content="wizardforcel"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css"/>
+<link href="page_styles.css" rel="stylesheet" type="text/css"/>
+</head>
+  <body class="dir">
+        
+        
+<div class="page">
+    
+        <h1 class="book-chapter" id="calibre_toc_56">6.11 倒排索引</h1>
+        
+            <div class="section" id="section-">
+            
+                <h1 id="倒排索引inverted-index" class="calibre5">倒排索引(Inverted index)</h1>
+<h2 id="方法介绍" class="calibre14">方法介绍</h2>
+<p class="calibre6">倒排索引是一种索引方法，被用来存储在全文搜索下某个单词在一个文档或者一组文档中的存储位置的映射，常被应用于搜索引擎和关键字查询的问题中。</p>
+<p class="calibre6">以英文为例，下面是要被索引的文本：</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c">T0 = "it is what it is"  
+T1 = "what is it"  
+T2 = "it is a banana"  
+</code></pre><p class="calibre6">我们就能得到下面的反向文件索引：</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c">"a":      {2}
+"banana": {2}
+"is":     {0, 1, 2}
+"it":     {0, 1, 2}
+"what":   {0, 1}
+</code></pre><p class="calibre6">检索的条件"what","is"和"it"将对应集合的交集。</p>
+<p class="calibre6">正向索引开发出来用来存储每个文档的单词的列表。正向索引的查询往往满足每个文档有序频繁的全文查询和每个单词在校验文档中的验证这样的查询。在正向索引中，文档占据了中心的位置，每个文档指向了一个它所包含的索引项的序列。也就是说文档指向了它包含的那些单词，而反向索引则是单词指向了包含它的文档，很容易看到这个反向的关系。</p>
+<h2 id="问题实例" class="calibre8">问题实例</h2>
+<p class="calibre6"><strong class="calibre12">1、文档检索系统，查询那些文件包含了某单词，比如常见的学术论文的关键字搜索</strong></p>
+<p class="calibre6"><strong class="calibre12">提示</strong>：建倒排索引。</p>
+
+            
+            </div>
+        
+    
+</div>
+
+        
+        
+    
+    
+
+</body></html>

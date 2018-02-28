@@ -1,0 +1,516 @@
+<?xml version='1.0' encoding='utf-8'?>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-tw" xml:lang="zh-tw">
+  <head>
+    <title>倒排索引关键词不重复Hash编码 | 编程之法：面试和算法心得</title>
+    <meta name="description" content=""/>
+    <meta name="generator" content="GitBook 2.6.5"/>
+    <meta name="author" content="wizardforcel"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css"/>
+<link href="page_styles.css" rel="stylesheet" type="text/css"/>
+</head>
+  <body class="dir">
+        
+        
+<div class="page">
+    
+        <h1 class="book-chapter" id="calibre_toc_76">倒排索引关键词不重复Hash编码</h1>
+        
+            <div class="section" id="section-">
+            
+                <h1 id="倒排索引关键词不重复hash编码" class="calibre5">倒排索引关键词不重复Hash编码</h1>
+<p class="calibre6">作者：July、yansha。编程艺术室出品。</p>
+<p class="calibre6">出处：结构之法算法之道</p>
+<p class="calibre6">本章要介绍这样一个问题，对倒排索引中的关键词进行编码。那么，这个问题将分为两个个步骤：</p>
+<ol class="calibre1">
+<li class="calibre11">首先，要提取倒排索引内词典文件中的关键词；</li>
+<li class="calibre11">对提取出来的关键词进行编码。本章采取hash编码的方式。既然要用hash编码，那么最重要的就是要解决hash冲突的问题，下文会详细介绍。</li>
+</ol>
+<p class="calibre6">有一点必须提醒读者的是，倒排索引包含词典和倒排记录表两个部分，词典一般有词项（或称为关键词）和词项频率（即这个词项或关键词出现的次数），倒排记录表则记录着上述词项（或关键词）所出现的位置，或出现的文档及网页ID等相关信息。</p>
+<h2 id="241、正排索引与倒排索引" class="calibre8">24.1、正排索引与倒排索引</h2>
+<p class="calibre6">咱们先来看什么是倒排索引，以及倒排索引与正排索引之间的区别：</p>
+<p class="calibre6">我们知道，搜索引擎的关键步骤就是建立倒排索引，所谓倒排索引一般表示为一个关键词，然后是它的频度（出现的次数），位置（出现在哪一篇文章或网页中，及有关的日期，作者等信息），它相当于为互联网上几千亿页网页做了一个索引，好比一本书的目录、标签一般。读者想看哪一个主题相关的章节，直接根据目录即可找到相关的页面。不必再从书的第一页到最后一页，一页一页的查找。</p>
+<p class="calibre6">接下来，阐述下正排索引与倒排索引的区别：</p>
+<h2 id="一般索引（正排索引）" class="calibre8">一般索引（正排索引）</h2>
+<p class="calibre6">正排表是以文档的ID为关键字，表中记录文档中每个字的位置信息，查找时扫描表中每个文档中字的信息直到找出所有包含查询关键字的文档。正排表结构如图1所示，这种组织方法在建立索引的时候结构比较简单，建立比较方便且易于维护;因为索引是基于文档建立的，若是有新的文档假如，直接为该文档建立一个新的索引块，挂接在原来索引文件的后面。若是有文档删除，则直接找到该文档号文档对因的索引信息，将其直接删除。但是在查询的时候需对所有的文档进行扫描以确保没有遗漏，这样就使得检索时间大大延长，检索效率低下。</p>
+<p class="calibre6">尽管正排表的工作原理非常的简单，但是由于其检索效率太低，除非在特定情况下，否则实用性价值不大。<br class="calibre21"/><img src="../images/23~24/24.1.gif" alt="img" class="calibre19"/></p>
+<h2 id="倒排索引" class="calibre8">倒排索引</h2>
+<p class="calibre6">倒排表以字或词为关键字进行索引，表中关键字所对应的记录表项记录了出现这个字或词的所有文档，一个表项就是一个字表段，它记录该文档的ID和字符在该文档中出现的位置情况。由于每个字或词对应的文档数量在动态变化，所以倒排表的建立和维护都较为复杂，但是在查询的时候由于可以一次得到查询关键字所对应的所有文档，所以效率高于正排表。在全文检索中，检索的快速响应是一个最为关键的性能，而索引建立由于在后台进行，尽管效率相对低一些，但不会影响整个搜索引擎的效率。</p>
+<p class="calibre6">倒排表的结构图如图2：<br class="calibre21"/><img src="../images/23~24/24.2.gif" alt="img" class="calibre19"/></p>
+<p class="calibre6">倒排表的索引信息保存的是字或词后继数组模型、互关联后继数组模型条在文档内的位置，在同一篇文档内相邻的字或词条的前后关系没有被保存到索引文件内。</p>
+<h2 id="242、倒排索引中提取关键词" class="calibre8">24.2、倒排索引中提取关键词</h2>
+<p class="calibre6">倒排索引是搜索引擎之基石。建成了倒排索引后，用户要查找某个query，如在搜索框输入某个关键词：“结构之法”后，搜索引擎不会再次使用爬虫又一个一个去抓取每一个网页，从上到下扫描网页，看这个网页有没有出现这个关键词，而是会在它预先生成的倒排索引文件中查找和匹配包含这个关键词“结构之法”的所有网页。找到了之后，再按相关性度排序，最终把排序后的结果显示给用户。<br class="calibre21"/><img src="../images/23~24/24.3.gif" alt="img" class="calibre19"/></p>
+<p class="calibre6">如下，即是一个倒排索引文件（不全），我们把它取名为big_index，<img src="../images/23~24/24.4.gif" alt="img" class="calibre19"/>文件中每一较短的，不包含有“#####”符号的便是某个关键词，及这个关键词的出现次数。现在要从这个大索引文件中提取出这些关键词，--Firelf--，-11，-Winter-，.，007，007：天降杀机，02Chan..如何做到呢？一行一行的扫描整个索引文件么？</p>
+<p class="calibre6">何意？之前已经说过：倒排索引包含词典和倒排记录表两个部分，词典一般有词项（或称为关键词）和词项频率（即这个词项或关键词出现的次数），倒排记录表则记录着上述词项（或关键词）所出现的位置，或出现的文档及网页ID等相关信息。</p>
+<p class="calibre6">最简单的讲，就是要提取词典中的词项（关键词）：--Firelf--，-11，-Winter-，.，007，007：天降杀机，02Chan...。</p>
+<p class="calibre6">--Firelf--（关键词）8（出现次数）<br class="calibre21"/><img src="../images/23~24/24.5.gif" alt="img" class="calibre19"/></p>
+<p class="calibre6">我们可以试着这么解决：通过查找#####便可判断某一行出现的词是不是关键词，但如果这样做的话，便要扫描整个索引文件的每一行，代价实在巨大。如何提高速度呢？对了，关键词后面的那个出现次数为我们问题的解决起到了很好的作用，如下注释所示：</p>
+<p class="calibre6">  //  本身没有##### 的行判定为关键词行，后跟这个关键词的行数N（即词项频率）
+  //  接下来，截取关键词--Firelf--，然后读取后面关键词的行数N
+  //  再跳过N行（滤过和避免扫描中间的倒排记录表信息）
+  //  读取下一个关键词..</p>
+<p class="calibre6">有朋友指出，上述方法虽然减少了扫描的行数，但并没有减少I0开销。读者是否有更好地办法？欢迎随时交流。</p>
+<h2 id="243、为提取出来的关键词编码" class="calibre8">24.3、为提取出来的关键词编码</h2>
+<p class="calibre6">爱思考的朋友可能会问，上述从倒排索引文件中提取出那些关键词（词项）的操作是为了什么呢？其实如我个人微博上12月12日所述的Hash词典编码：</p>
+<p class="calibre6">词典文件的编码：1、词典怎么生成（存储和构造词典）；2、如何运用hash对输入的汉字进行编码；3、如何更好的解决冲突，即不重复以及追加功能。具体例子为：事先构造好词典文件后，输入一个词，要求找到这个词的编码，然后将其编码输出。且要有不断能添加词的功能，不得重复。</p>
+<p class="calibre6">步骤应该是如下：1、读索引文件；2、提取索引中的词出来；3、词典怎么生成，存储和构造词典；4、词典文件的编码：不重复与追加功能。编码比如，输入中国，他的编码可以为10001，然后输入银行，他的编码可以为10002。只要实现不断添加词功能，以及不重复即可，词典类的大文件，hash最重要的是怎样避免冲突。</p>
+<p class="calibre6">也就是说，现在我要对上述提取出来后的关键词进行编码，采取何种方式编码呢？暂时用hash函数编码。编码之后的效果将是每一个关键词都有一个特定的编码，如下图所示（与上文big_index文件比较一下便知）：</p>
+<p class="calibre6">--Firelf--  对应编码为：135942</p>
+<p class="calibre6">-11         对应编码为：106101</p>
+<p class="calibre6">....<br class="calibre21"/><img src="../images/23~24/24.6.gif" alt="img" class="calibre19"/></p>
+<p class="calibre6">但细心的朋友一看上图便知，其中第34~39行显示，有重复的编码，那么如何解决这个不重复编码的问题呢？
+用hash表编码？但其极易产生冲突碰撞，为什么？请看：</p>
+<p class="calibre6">哈希表是一种查找效率极高的数据结构，很多语言都在内部实现了哈希表。PHP中的哈希表是一种极为重要的数据结构，不但用于表示Array数据类型，还在Zend虚拟机内部用于存储上下文环境信息（执行上下文的变量及函数均使用哈希表结构存储）。</p>
+<p class="calibre6">理想情况下哈希表插入和查找操作的时间复杂度均为O(1)，任何一个数据项可以在一个与哈希表长度无关的时间内计算出一个哈希值（key），然后在常量时间内定位到一个桶（术语bucket，表示哈希表中的一个位置）。当然这是理想情况下，因为任何哈希表的长度都是有限的，所以一定存在不同的数据项具有相同哈希值的情况，此时不同数据项被定为到同一个桶，称为碰撞（collision）。</p>
+<p class="calibre6">哈希表的实现需要解决碰撞问题，碰撞解决大体有两种思路，</p>
+<ol class="calibre1">
+<li class="calibre11">第一种是根据某种原则将被碰撞数据定为到其它桶，例如线性探测——如果数据在插入时发生了碰撞，则顺序查找这个桶后面的桶，将其放入第一个没有被使用的桶；</li>
+<li class="calibre11">第二种策略是每个桶不是一个只能容纳单个数据项的位置，而是一个可容纳多个数据的数据结构（例如链表或红黑树），所有碰撞的数据以某种数据结构的形式组织起来。</li>
+</ol>
+<p class="calibre6">不论使用了哪种碰撞解决策略，都导致插入和查找操作的时间复杂度不再是O(1)。以查找为例，不能通过key定位到桶就结束，必须还要比较原始key（即未做哈希之前的key）是否相等，如果不相等，则要使用与插入相同的算法继续查找，直到找到匹配的值或确认数据不在哈希表中。</p>
+<p class="calibre6">PHP是使用单链表存储碰撞的数据，因此实际上PHP哈希表的平均查找复杂度为O(L)，其中L为桶链表的平均长度；而最坏复杂度为O(N)，此时所有数据全部碰撞，哈希表退化成单链表。下图PHP中正常哈希表和退化哈希表的示意图。<br class="calibre21"/><img src="../images/23~24/24.7.gif" alt="img" class="calibre19"/></p>
+<p class="calibre6">哈希表碰撞攻击就是通过精心构造数据，使得所有数据全部碰撞，人为将哈希表变成一个退化的单链表，此时哈希表各种操作的时间均提升了一个数量级，因此会消耗大量CPU资源，导致系统无法快速响应请求，从而达到拒绝服务攻击（DoS）的目的。</p>
+<p class="calibre6">可以看到，进行哈希碰撞攻击的前提是哈希算法特别容易找出碰撞，如果是MD5或者SHA1那基本就没戏了，幸运的是（也可以说不幸的是）大多数编程语言使用的哈希算法都十分简单（这是为了效率考虑），因此可以不费吹灰之力之力构造出攻击数据.（上述五段文字引自：<a href="http://www.codinglabs.org/html/hash-collisions-attack-on-php.html" target="_blank" class="pcalibre2 pcalibre1 calibre7 pcalibre">http://www.codinglabs.org/html/hash-collisions-attack-on-php.html</a>）。</p>
+<h2 id="244、暴雪的hash算法" class="calibre8">24.4、暴雪的Hash算法</h2>
+<p class="calibre6">值得一提的是，在解决Hash冲突的时候，搞的焦头烂额，结果今天上午在自己的博客内的一篇文章（<a href="http://blog.csdn.net/v_JULY_v/archive/2011/03/17/6256463.aspx" target="_blank" class="pcalibre2 pcalibre1 calibre7 pcalibre">十一、从头到尾彻底解析Hash表算法</a>）内找到了解决办法：网上流传甚广的暴雪的Hash算法。 OK，接下来，咱们回顾下暴雪的hash表算法：</p>
+<blockquote class="calibre22">
+<p class="calibre6">接下来，咱们来具体分析一下一个最快的Hash表算法。</p>
+<p class="calibre6">我们由一个简单的问题逐步入手：有一个庞大的字符串数组，然后给你一个单独的字符串，让你从这个数组中查找是否有这个字符串并找到它，你会怎么做？</p>
+<p class="calibre6">有一个方法最简单，老老实实从头查到尾，一个一个比较，直到找到为止，我想只要学过程序设计的人都能把这样一个程序作出来，但要是有程序员把这样的程序交给用户，我只能用无语来评价，或许它真的能工作，但...也只能如此了。</p>
+<p class="calibre6">最合适的算法自然是使用HashTable（哈希表），先介绍介绍其中的基本知识，所谓Hash，一般是一个整数，通过某种算法，可以把一个字符串"压缩" 成一个整数。当然，无论如何，一个32位整数是无法对应回一个字符串的，但在程序中，两个字符串计算出的Hash值相等的可能非常小，下面看看在MPQ中的Hash算法：</p>
+<p class="calibre6">函数prepareCryptTable以下的函数生成一个长度为0x500（合10进制数：1280）的cryptTable[0x500]</p>
+</blockquote>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c"><span class="hljs-title">//函数prepareCryptTable以下的函数生成一个长度为0x500（合10进制数：1280）的cryptTable[0x500]  </span>
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">prepareCryptTable</span><span class="hljs-params">()</span>  
+</span>{   
+    <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">long</span> seed = <span class="hljs-params">0x00100001</span>, index1 = <span class="hljs-params">0</span>, index2 = <span class="hljs-params">0</span>, i;  
+
+    <span class="hljs-keyword">for</span>( index1 = <span class="hljs-params">0</span>; index1 &lt; <span class="hljs-params">0x100</span>; index1++ )  
+    {   
+        <span class="hljs-keyword">for</span>( index2 = index1, i = <span class="hljs-params">0</span>; i &lt; <span class="hljs-params">5</span>; i++, index2 += <span class="hljs-params">0x100</span> )  
+        {   
+            <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">long</span> temp1, temp2;  
+
+            seed = (seed * <span class="hljs-params">125</span> + <span class="hljs-params">3</span>) % <span class="hljs-params">0x2AAAAB</span>;  
+            temp1 = (seed &amp; <span class="hljs-params">0xFFFF</span>) &lt;&lt; <span class="hljs-params">0x10</span>;  
+
+            seed = (seed * <span class="hljs-params">125</span> + <span class="hljs-params">3</span>) % <span class="hljs-params">0x2AAAAB</span>;  
+            temp2 = (seed &amp; <span class="hljs-params">0xFFFF</span>);  
+
+            cryptTable[index2] = ( temp1 | temp2 );   
+        }   
+    }   
+}
+</code></pre>
+<blockquote class="calibre22">
+<p class="calibre6">函数HashString以下函数计算lpszFileName 字符串的hash值，其中dwHashType 为hash的类型，</p>
+</blockquote>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c"><span class="hljs-title">//函数HashString以下函数计算lpszFileName 字符串的hash值，其中dwHashType 为hash的类型，  </span>
+<span class="hljs-function"><span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">long</span> <span class="hljs-title">HashString</span><span class="hljs-params">(<span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *lpszkeyName, <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">long</span> dwHashType )</span>  
+</span>{  
+    <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">char</span> *key  = (<span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">char</span> *)lpszkeyName;  
+    <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">long</span> seed1 = <span class="hljs-params">0x7FED7FED</span>;  
+    <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">long</span> seed2 = <span class="hljs-params">0xEEEEEEEE</span>;  
+    <span class="hljs-keyword">int</span> ch;  
+
+    <span class="hljs-keyword">while</span>( *key != <span class="hljs-params">0</span> )  
+    {  
+        ch = *key++;  
+        seed1 = cryptTable[(dwHashType&lt;&lt;<span class="hljs-params">8</span>) + ch] ^ (seed1 + seed2);  
+        seed2 = ch + seed1 + seed2 + (seed2&lt;&lt;<span class="hljs-params">5</span>) + <span class="hljs-params">3</span>;  
+    }  
+    <span class="hljs-keyword">return</span> seed1;  
+}
+</code></pre>
+<blockquote class="calibre22">
+<p class="calibre6">Blizzard的这个算法是非常高效的，被称为"One-Way Hash"( A one-way hash is a an algorithm that is constructed in such a way that deriving the original string (set of strings, actually) is virtually impossible)。举个例子，字符串"unitneutralacritter.grp"通过这个算法得到的结果是0xA26067F3。</p>
+<p class="calibre6">是不是把第一个算法改进一下，改成逐个比较字符串的Hash值就可以了呢，答案是，远远不够，要想得到最快的算法，就不能进行逐个的比较，通常是构造一个哈希表(Hash Table)来解决问题，哈希表是一个大数组，这个数组的容量根据程序的要求来定义，</p>
+<p class="calibre6">例如1024，每一个Hash值通过取模运算 (mod) 对应到数组中的一个位置，这样，只要比较这个字符串的哈希值对应的位置有没有被占用，就可以得到最后的结果了，想想这是什么速度？是的，是最快的O(1)，现在仔细看看这个算法吧：</p>
+</blockquote>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c"><span class="hljs-keyword">typedef</span> <span class="hljs-keyword">struct</span>  
+{  
+    <span class="hljs-keyword">int</span> nHashA;  
+    <span class="hljs-keyword">int</span> nHashB;  
+    <span class="hljs-keyword">char</span> bExists;  
+   ......  
+} SOMESTRUCTRUE;  
+<span class="hljs-title">//一种可能的结构体定义？</span>
+</code></pre>
+<blockquote class="calibre22">
+<p class="calibre6">函数GetHashTablePos下述函数为在Hash表中查找是否存在目标字符串，有则返回要查找字符串的Hash值，无则，return -1.</p>
+</blockquote>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c"><span class="hljs-title">//函数GetHashTablePos下述函数为在Hash表中查找是否存在目标字符串，有则返回要查找字符串的Hash值，无则，return -1.  </span>
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">GetHashTablePos</span><span class="hljs-params">( har *lpszString, SOMESTRUCTURE *lpTable )</span>   
+<span class="hljs-title">//lpszString要在Hash表中查找的字符串，lpTable为存储字符串Hash值的Hash表。  </span>
+</span>{   
+    <span class="hljs-keyword">int</span> nHash = HashString(lpszString);  <span class="hljs-title">//调用上述函数HashString，返回要查找字符串lpszString的Hash值。  </span>
+    <span class="hljs-keyword">int</span> nHashPos = nHash % nTableSize;  
+
+    <span class="hljs-keyword">if</span> ( lpTable[nHashPos].bExists  &amp;&amp;  !<span class="hljs-params">strcmp</span>( lpTable[nHashPos].pString, lpszString ) )   
+    {  <span class="hljs-title">//如果找到的Hash值在表中存在，且要查找的字符串与表中对应位置的字符串相同，  </span>
+        <span class="hljs-keyword">return</span> nHashPos;    <span class="hljs-title">//返回找到的Hash值  </span>
+    }   
+    <span class="hljs-keyword">else</span>  
+    {  
+        <span class="hljs-keyword">return</span> -<span class="hljs-params">1</span>;    
+    }   
+}
+</code></pre>
+<blockquote class="calibre22">
+<p class="calibre6">看到此，我想大家都在想一个很严重的问题：“如果两个字符串在哈希表中对应的位置相同怎么办？”,毕竟一个数组容量是有限的，这种可能性很大。解决该问题的方法很多，我首先想到的就是用“链表”,感谢大学里学的数据结构教会了这个百试百灵的法宝，我遇到的很多算法都可以转化成链表来解决，只要在哈希表的每个入口挂一个链表，保存所有对应的字符串就OK了。事情到此似乎有了完美的结局，如果是把问题独自交给我解决，此时我可能就要开始定义数据结构然后写代码了。
+然而Blizzard的程序员使用的方法则是更精妙的方法。基本原理就是：他们在哈希表中不是用一个哈希值而是用三个哈希值来校验字符串。  </p>
+<p class="calibre6">MPQ使用文件名哈希表来跟踪内部的所有文件。但是这个表的格式与正常的哈希表有一些不同。首先，它没有使用哈希作为下标，把实际的文件名存储在表中用于验证，实际上它根本就没有存储文件名。而是使用了3种不同的哈希：一个用于哈希表的下标，两个用于验证。这两个验证哈希替代了实际文件名。  </p>
+<p class="calibre6">当然了，这样仍然会出现2个不同的文件名哈希到3个同样的哈希。但是这种情况发生的概率平均是：1:18889465931478580854784，这个概率对于任何人来说应该都是足够小的。现在再回到数据结构上，Blizzard使用的哈希表没有使用链表，而采用"顺延"的方式来解决问题。”下面，咱们来看看这个网上流传甚广的暴雪hash算法：</p>
+</blockquote>
+<p class="calibre6">函数GetHashTablePos中，lpszString 为要在hash表中查找的字符串；lpTable 为存储字符串hash值的hash表；nTableSize 为hash表的长度：</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c"><span class="hljs-title">//函数GetHashTablePos中，lpszString 为要在hash表中查找的字符串；lpTable 为存储字符串hash值的hash表；nTableSize 为hash表的长度：   </span>
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">GetHashTablePos</span><span class="hljs-params">( <span class="hljs-keyword">char</span> *lpszString, MPQHASHTABLE *lpTable, <span class="hljs-keyword">int</span> nTableSize )</span>  
+</span>{  
+    <span class="hljs-keyword">const</span> <span class="hljs-keyword">int</span>  HASH_OFFSET = <span class="hljs-params">0</span>, HASH_A = <span class="hljs-params">1</span>, HASH_B = <span class="hljs-params">2</span>;  
+
+    <span class="hljs-keyword">int</span>  nHash = HashString( lpszString, HASH_OFFSET );  
+    <span class="hljs-keyword">int</span>  nHashA = HashString( lpszString, HASH_A );  
+    <span class="hljs-keyword">int</span>  nHashB = HashString( lpszString, HASH_B );  
+    <span class="hljs-keyword">int</span>  nHashStart = nHash % nTableSize;  
+    <span class="hljs-keyword">int</span>  nHashPos = nHashStart;  
+
+    <span class="hljs-keyword">while</span> ( lpTable[nHashPos].bExists )  
+   {  
+<span class="hljs-title">//     如果仅仅是判断在该表中时候存在这个字符串，就比较这两个hash值就可以了，不用对结构体中的字符串进行比较。  </span>
+<span class="hljs-title">//         这样会加快运行的速度？减少hash表占用的空间？这种方法一般应用在什么场合？  </span>
+        <span class="hljs-keyword">if</span> ( 　 lpTable[nHashPos].nHashA == nHashA  
+        &amp;&amp;  lpTable[nHashPos].nHashB == nHashB )  
+       {  
+            <span class="hljs-keyword">return</span> nHashPos;  
+       }  
+       <span class="hljs-keyword">else</span>  
+       {  
+            nHashPos = (nHashPos + <span class="hljs-params">1</span>) % nTableSize;  
+       }  
+
+        <span class="hljs-keyword">if</span> (nHashPos == nHashStart)  
+              <span class="hljs-keyword">break</span>;  
+    }  
+     <span class="hljs-keyword">return</span> -<span class="hljs-params">1</span>;  
+}
+</code></pre>
+<p class="calibre6">上述程序解释：</p>
+<ol class="calibre1">
+<li class="calibre11">计算出字符串的三个哈希值（一个用来确定位置，另外两个用来校验)  </li>
+<li class="calibre11">察看哈希表中的这个位置  </li>
+<li class="calibre11">哈希表中这个位置为空吗？如果为空，则肯定该字符串不存在，返回-1。  </li>
+<li class="calibre11">如果存在，则检查其他两个哈希值是否也匹配，如果匹配，则表示找到了该字符串，返回其Hash值。  </li>
+<li class="calibre11">移到下一个位置，如果已经移到了表的末尾，则反绕到表的开始位置起继续查询  </li>
+<li class="calibre11">看看是不是又回到了原来的位置，如果是，则返回没找到  </li>
+<li class="calibre11">回到3。  </li>
+</ol>
+<h2 id="245、不重复hash编码" class="calibre8">24.5、不重复Hash编码</h2>
+<p class="calibre6">有了上面的暴雪Hash算法。咱们的问题便可解决了。不过，有两点必须先提醒读者：  </p>
+<ol class="calibre1">
+<li class="calibre11">Hash表起初要初始化；  </li>
+<li class="calibre11">暴雪的Hash算法对于查询那样处理可以，但对插入就不能那么解决。  </li>
+</ol>
+<p class="calibre6">关键主体代码如下：</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c"><span class="hljs-title">//函数prepareCryptTable以下的函数生成一个长度为0x500（合10进制数：1280）的cryptTable[0x500]  </span>
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">prepareCryptTable</span><span class="hljs-params">()</span>  
+</span>{  
+    <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">long</span> seed = <span class="hljs-params">0x00100001</span>, index1 = <span class="hljs-params">0</span>, index2 = <span class="hljs-params">0</span>, i;  
+
+    <span class="hljs-keyword">for</span>( index1 = <span class="hljs-params">0</span>; index1 &lt;<span class="hljs-params">0x100</span>; index1++ )  
+    {  
+        <span class="hljs-keyword">for</span>( index2 = index1, i = <span class="hljs-params">0</span>; i &lt; <span class="hljs-params">5</span>; i++, index2 += <span class="hljs-params">0x100</span>)  
+        {  
+            <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">long</span> temp1, temp2;  
+            seed = (seed * <span class="hljs-params">125</span> + <span class="hljs-params">3</span>) % <span class="hljs-params">0x2AAAAB</span>;  
+            temp1 = (seed &amp; <span class="hljs-params">0xFFFF</span>)&lt;&lt;<span class="hljs-params">0x10</span>;  
+            seed = (seed * <span class="hljs-params">125</span> + <span class="hljs-params">3</span>) % <span class="hljs-params">0x2AAAAB</span>;  
+            temp2 = (seed &amp; <span class="hljs-params">0xFFFF</span>);  
+            cryptTable[index2] = ( temp1 | temp2 );  
+        }  
+    }  
+}  
+
+<span class="hljs-title">//函数HashString以下函数计算lpszFileName 字符串的hash值，其中dwHashType 为hash的类型，  </span>
+<span class="hljs-function"><span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">long</span> <span class="hljs-title">HashString</span><span class="hljs-params">(<span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *lpszkeyName, <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">long</span> dwHashType )</span>  
+</span>{  
+    <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">char</span> *key  = (<span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">char</span> *)lpszkeyName;  
+    <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">long</span> seed1 = <span class="hljs-params">0x7FED7FED</span>;  
+    <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">long</span> seed2 = <span class="hljs-params">0xEEEEEEEE</span>;  
+    <span class="hljs-keyword">int</span> ch;  
+
+    <span class="hljs-keyword">while</span>( *key != <span class="hljs-params">0</span> )  
+    {  
+        ch = *key++;  
+        seed1 = cryptTable[(dwHashType&lt;&lt;<span class="hljs-params">8</span>) + ch] ^ (seed1 + seed2);  
+        seed2 = ch + seed1 + seed2 + (seed2&lt;&lt;<span class="hljs-params">5</span>) + <span class="hljs-params">3</span>;  
+    }  
+    <span class="hljs-keyword">return</span> seed1;  
+}  
+
+<span class="hljs-title">/////////////////////////////////////////////////////////////////////  </span>
+<span class="hljs-title">//function: 哈希词典 编码  </span>
+<span class="hljs-title">//parameter:  </span>
+<span class="hljs-title">//author: lei.zhou  </span>
+<span class="hljs-title">//time: 2011-12-14  </span>
+<span class="hljs-title">/////////////////////////////////////////////////////////////////////  </span>
+MPQHASHTABLE TestHashTable[nTableSize];  
+<span class="hljs-keyword">int</span> TestHashCTable[nTableSize];  
+<span class="hljs-keyword">int</span> TestHashDTable[nTableSize];  
+key_list test_data[nTableSize];  
+
+<span class="hljs-title">//直接调用上面的hashstring，nHashPos就是对应的HASH值。  </span>
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">insert_string</span><span class="hljs-params">(<span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *string_in)</span>  
+</span>{  
+    <span class="hljs-keyword">const</span> <span class="hljs-keyword">int</span> HASH_OFFSET = <span class="hljs-params">0</span>, HASH_C = <span class="hljs-params">1</span>, HASH_D = <span class="hljs-params">2</span>;  
+    <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">int</span> nHash = HashString(string_in, HASH_OFFSET);  
+    <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">int</span> nHashC = HashString(string_in, HASH_C);  
+    <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">int</span> nHashD = HashString(string_in, HASH_D);  
+    <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">int</span> nHashStart = nHash % nTableSize;  
+    <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">int</span> nHashPos = nHashStart;  
+    <span class="hljs-keyword">int</span> ln, ires = <span class="hljs-params">0</span>;  
+
+    <span class="hljs-keyword">while</span> (TestHashTable[nHashPos].bExists)  
+    {  
+<span class="hljs-title">//      if (TestHashCTable[nHashPos]  == (int) nHashC &amp;&amp; TestHashDTable[nHashPos] == (int) nHashD)  </span>
+<span class="hljs-title">//          break;  </span>
+<span class="hljs-title">//      //...  </span>
+<span class="hljs-title">//      else  </span>
+        <span class="hljs-title">//如之前所提示读者的那般，暴雪的Hash算法对于查询那样处理可以，但对插入就不能那么解决  </span>
+            nHashPos = (nHashPos + <span class="hljs-params">1</span>) % nTableSize;  
+
+        <span class="hljs-keyword">if</span> (nHashPos == nHashStart)  
+            <span class="hljs-keyword">break</span>;  
+    }  
+
+    ln = <span class="hljs-params">strlen</span>(string_in);  
+    <span class="hljs-keyword">if</span> (!TestHashTable[nHashPos].bExists &amp;&amp; (ln &lt; nMaxStrLen))  
+    {   
+        TestHashCTable[nHashPos] = nHashC;  
+        TestHashDTable[nHashPos] = nHashD;  
+
+        test_data[nHashPos] = (KEYNODE *) <span class="hljs-params">malloc</span> (<span class="hljs-keyword">sizeof</span>(KEYNODE) * <span class="hljs-params">1</span>);  
+        <span class="hljs-keyword">if</span>(test_data[nHashPos] == <span class="hljs-params">NULL</span>)  
+        {  
+            <span class="hljs-params">printf</span>(<span class="hljs-string">"10000 EMS ERROR !!!!\n"</span>);  
+            <span class="hljs-keyword">return</span> <span class="hljs-params">0</span>;  
+        }  
+
+        test_data[nHashPos]-&gt;pkey = (<span class="hljs-keyword">char</span> *)<span class="hljs-params">malloc</span>(ln+<span class="hljs-params">1</span>);  
+        <span class="hljs-keyword">if</span>(test_data[nHashPos]-&gt;pkey == <span class="hljs-params">NULL</span>)  
+        {  
+            <span class="hljs-params">printf</span>(<span class="hljs-string">"10000 EMS ERROR !!!!\n"</span>);  
+            <span class="hljs-keyword">return</span> <span class="hljs-params">0</span>;  
+        }  
+
+        <span class="hljs-params">memset</span>(test_data[nHashPos]-&gt;pkey, <span class="hljs-params">0</span>, ln+<span class="hljs-params">1</span>);  
+        <span class="hljs-params">strncpy</span>(test_data[nHashPos]-&gt;pkey, string_in, ln);  
+        *((test_data[nHashPos]-&gt;pkey)+ln) = <span class="hljs-params">0</span>;  
+        test_data[nHashPos]-&gt;weight = nHashPos;  
+
+        TestHashTable[nHashPos].bExists = <span class="hljs-params">1</span>;  
+    }  
+    <span class="hljs-keyword">else</span>  
+    {  
+        <span class="hljs-keyword">if</span>(TestHashTable[nHashPos].bExists)  
+            <span class="hljs-params">printf</span>(<span class="hljs-string">"30000 in the hash table %s !!!\n"</span>, string_in);  
+        <span class="hljs-keyword">else</span>  
+            <span class="hljs-params">printf</span>(<span class="hljs-string">"90000 strkey error !!!\n"</span>);  
+    }  
+    <span class="hljs-keyword">return</span> nHashPos;  
+}
+</code></pre>
+<p class="calibre6">接下来要读取索引文件big_index对其中的关键词进行编码（为了简单起见，直接一行一行扫描读写，没有跳过行数了）：</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c"><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">bigIndex_hash</span><span class="hljs-params">(<span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *docpath, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *hashpath)</span>  
+</span>{  
+    FILE *fr, *fw;  
+    <span class="hljs-keyword">int</span> len;  
+    <span class="hljs-keyword">char</span> *pbuf, *p;  
+    <span class="hljs-keyword">char</span> dockey[TERM_MAX_LENG];  
+
+    <span class="hljs-keyword">if</span>(docpath == <span class="hljs-params">NULL</span> || *docpath == <span class="hljs-string">'\0'</span>)  
+        <span class="hljs-keyword">return</span>;  
+
+    <span class="hljs-keyword">if</span>(hashpath == <span class="hljs-params">NULL</span> || *hashpath == <span class="hljs-string">'\0'</span>)  
+        <span class="hljs-keyword">return</span>;  
+
+    fr = fopen(docpath, <span class="hljs-string">"rb"</span>);  <span class="hljs-title">//读取文件docpath  </span>
+    fw = fopen(hashpath, <span class="hljs-string">"wb"</span>);  
+    <span class="hljs-keyword">if</span>(fr == <span class="hljs-params">NULL</span> || fw == <span class="hljs-params">NULL</span>)  
+    {  
+        <span class="hljs-params">printf</span>(<span class="hljs-string">"open read or write file error!\n"</span>);  
+        <span class="hljs-keyword">return</span>;  
+    }  
+
+    pbuf = (<span class="hljs-keyword">char</span>*)<span class="hljs-params">malloc</span>(BUFF_MAX_LENG);  
+    <span class="hljs-keyword">if</span>(pbuf == <span class="hljs-params">NULL</span>)  
+    {  
+        fclose(fr);  
+        <span class="hljs-keyword">return</span> ;  
+    }  
+
+    <span class="hljs-params">memset</span>(pbuf, <span class="hljs-params">0</span>, BUFF_MAX_LENG);  
+
+    <span class="hljs-keyword">while</span>(fgets(pbuf, BUFF_MAX_LENG, fr))  
+    {  
+        len = GetRealString(pbuf);  
+        <span class="hljs-keyword">if</span>(len &lt;= <span class="hljs-params">1</span>)  
+            <span class="hljs-keyword">continue</span>;  
+        p = <span class="hljs-params">strstr</span>(pbuf, <span class="hljs-string">"#####"</span>);    
+        <span class="hljs-keyword">if</span>(p != <span class="hljs-params">NULL</span>)  
+            <span class="hljs-keyword">continue</span>;  
+
+        p = <span class="hljs-params">strstr</span>(pbuf, <span class="hljs-string">"  "</span>);  
+        <span class="hljs-keyword">if</span> (p == <span class="hljs-params">NULL</span>)  
+        {  
+            <span class="hljs-params">printf</span>(<span class="hljs-string">"file contents error!"</span>);  
+        }  
+
+        len = p - pbuf;  
+        dockey[<span class="hljs-params">0</span>] = <span class="hljs-params">0</span>;  
+        <span class="hljs-params">strncpy</span>(dockey, pbuf, len);  
+
+        dockey[len] = <span class="hljs-params">0</span>;        
+
+        <span class="hljs-keyword">int</span> num = insert_string(dockey);   
+
+        dockey[len] = <span class="hljs-string">' '</span>;  
+        dockey[len+<span class="hljs-params">1</span>] = <span class="hljs-string">'\0'</span>;  
+        <span class="hljs-keyword">char</span> str[<span class="hljs-params">20</span>];  
+        itoa(num, str, <span class="hljs-params">10</span>);  
+
+        <span class="hljs-params">strcat</span>(dockey, str);  
+        dockey[len+<span class="hljs-params">strlen</span>(str)+<span class="hljs-params">1</span>] = <span class="hljs-string">'\0'</span>;  
+        <span class="hljs-params">fprintf</span> (fw, <span class="hljs-string">"%s\n"</span>, dockey);  
+
+    }  
+    <span class="hljs-params">free</span>(pbuf);  
+    fclose(fr);  
+    fclose(fw);  
+}
+</code></pre>
+<p class="calibre6">主函数已经很简单了，如下：</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c"><span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span>  
+</span>{  
+    prepareCryptTable();  <span class="hljs-title">//Hash表起初要初始化  </span>
+
+    <span class="hljs-title">//现在要把整个big_index文件插入hash表，以取得编码结果  </span>
+    bigIndex_hash(<span class="hljs-string">"big_index.txt"</span>, <span class="hljs-string">"hashpath.txt"</span>);  
+    system(<span class="hljs-string">"pause"</span>);  
+
+    <span class="hljs-keyword">return</span> <span class="hljs-params">0</span>;  
+}
+</code></pre>
+<p class="calibre6">程序运行后生成的hashpath.txt文件如下：
+<img src="../images/23~24/24.8.gif" alt="img" class="calibre19"/></p>
+<p class="calibre6">如上所示，采取暴雪的Hash算法并在插入的时候做适当处理，当再次对上文中的索引文件big_index进行Hash编码后，冲突问题已经得到初步解决。当然，还有待更进一步更深入的测试。</p>
+<p class="calibre6">后续添上数目索引1~10000...</p>
+<p class="calibre6">后来又为上述文件中的关键词编了码一个计数的内码，不过，奇怪的是，同样的代码，在Dev C++ 与VS2010上运行结果却不同（左边dev上计数从"1"开始，VS上计数从“1994014002”开始），如下图所示：
+<img src="../images/23~24/24.9.gif" alt="img" class="calibre19"/></p>
+<p class="calibre6">在上面的bigIndex_hashcode函数的基础上，修改如下，即可得到上面的效果：</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c"><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">bigIndex_hashcode</span><span class="hljs-params">(<span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *in_file_path, <span class="hljs-keyword">const</span> <span class="hljs-keyword">char</span> *out_file_path)</span>  
+</span>{  
+    FILE *fr, *fw;  
+    <span class="hljs-keyword">int</span> len, value;  
+    <span class="hljs-keyword">char</span> *pbuf, *pleft, *p;  
+    <span class="hljs-keyword">char</span> keyvalue[TERM_MAX_LENG], str[WORD_MAX_LENG];  
+
+    <span class="hljs-keyword">if</span>(in_file_path == <span class="hljs-params">NULL</span> || *in_file_path == <span class="hljs-string">'\0'</span>) {  
+        <span class="hljs-params">printf</span>(<span class="hljs-string">"input file path error!\n"</span>);  
+        <span class="hljs-keyword">return</span>;  
+    }  
+
+    <span class="hljs-keyword">if</span>(out_file_path == <span class="hljs-params">NULL</span> || *out_file_path == <span class="hljs-string">'\0'</span>) {  
+        <span class="hljs-params">printf</span>(<span class="hljs-string">"output file path error!\n"</span>);  
+        <span class="hljs-keyword">return</span>;  
+    }  
+
+    fr = fopen(in_file_path, <span class="hljs-string">"r"</span>);  <span class="hljs-title">//读取in_file_path路径文件  </span>
+    fw = fopen(out_file_path, <span class="hljs-string">"w"</span>);  
+
+    <span class="hljs-keyword">if</span>(fr == <span class="hljs-params">NULL</span> || fw == <span class="hljs-params">NULL</span>)  
+    {  
+        <span class="hljs-params">printf</span>(<span class="hljs-string">"open read or write file error!\n"</span>);  
+        <span class="hljs-keyword">return</span>;  
+    }  
+
+    pbuf = (<span class="hljs-keyword">char</span>*)<span class="hljs-params">malloc</span>(BUFF_MAX_LENG);  
+    pleft = (<span class="hljs-keyword">char</span>*)<span class="hljs-params">malloc</span>(BUFF_MAX_LENG);  
+    <span class="hljs-keyword">if</span>(pbuf == <span class="hljs-params">NULL</span> || pleft == <span class="hljs-params">NULL</span>)  
+    {  
+        <span class="hljs-params">printf</span>(<span class="hljs-string">"allocate memory error!"</span>);  
+        fclose(fr);  
+        <span class="hljs-keyword">return</span> ;  
+    }  
+
+    <span class="hljs-params">memset</span>(pbuf, <span class="hljs-params">0</span>, BUFF_MAX_LENG);  
+
+    <span class="hljs-keyword">int</span> offset = <span class="hljs-params">1</span>;  
+    <span class="hljs-keyword">while</span>(fgets(pbuf, BUFF_MAX_LENG, fr))  
+    {  
+        <span class="hljs-keyword">if</span> (--offset &gt; <span class="hljs-params">0</span>)  
+            <span class="hljs-keyword">continue</span>;  
+
+        <span class="hljs-keyword">if</span>(GetRealString(pbuf) &lt;= <span class="hljs-params">1</span>)  
+            <span class="hljs-keyword">continue</span>;  
+
+        p = <span class="hljs-params">strstr</span>(pbuf, <span class="hljs-string">"#####"</span>);    
+        <span class="hljs-keyword">if</span>(p != <span class="hljs-params">NULL</span>)  
+            <span class="hljs-keyword">continue</span>;  
+
+        p = <span class="hljs-params">strstr</span>(pbuf, <span class="hljs-string">"  "</span>);  
+        <span class="hljs-keyword">if</span> (p == <span class="hljs-params">NULL</span>)  
+        {  
+            <span class="hljs-params">printf</span>(<span class="hljs-string">"file contents error!"</span>);  
+        }  
+
+        len = p - pbuf;  
+
+        <span class="hljs-title">// 确定跳过行数  </span>
+        <span class="hljs-params">strcpy</span>(pleft, p+<span class="hljs-params">1</span>);   
+        offset = atoi(pleft) + <span class="hljs-params">1</span>;  
+
+        <span class="hljs-params">strncpy</span>(keyvalue, pbuf, len);    
+        keyvalue[len] = <span class="hljs-string">'\0'</span>;  
+        value = insert_string(keyvalue);  
+
+        <span class="hljs-keyword">if</span> (value != -<span class="hljs-params">1</span>) {  
+
+            <span class="hljs-title">// key value中插入空格  </span>
+            keyvalue[len] = <span class="hljs-string">' '</span>;  
+            keyvalue[len+<span class="hljs-params">1</span>] = <span class="hljs-string">'\0'</span>;  
+
+            itoa(value, str, <span class="hljs-params">10</span>);  
+            <span class="hljs-params">strcat</span>(keyvalue, str);  
+
+            keyvalue[len+<span class="hljs-params">strlen</span>(str)+<span class="hljs-params">1</span>] = <span class="hljs-string">' '</span>;  
+            keyvalue[len+<span class="hljs-params">strlen</span>(str)+<span class="hljs-params">2</span>] = <span class="hljs-string">'\0'</span>;  
+
+            keysize++;  
+            itoa(keysize, str, <span class="hljs-params">10</span>);  
+            <span class="hljs-params">strcat</span>(keyvalue, str);  
+
+            <span class="hljs-title">// 将key value写入文件  </span>
+            <span class="hljs-params">fprintf</span> (fw, <span class="hljs-string">"%s\n"</span>, keyvalue);  
+
+        }  
+    }  
+    <span class="hljs-params">free</span>(pbuf);  
+    fclose(fr);  
+    fclose(fw);  
+}
+</code></pre>
+<h2 id="小结" class="calibre8">小结</h2>
+<p class="calibre6">本文有一点值得一提的是，在此前的这篇文章（<a href="http://blog.csdn.net/v_JULY_v/archive/2011/03/17/6256463.aspx" target="_blank" class="pcalibre2 pcalibre1 calibre7 pcalibre">十一、从头到尾彻底解析Hash表算法</a>）之中，只是对Hash表及暴雪的Hash算法有过学习和了解，但尚未真正运用过它，而今在本章中体现，证明还是之前写的文章，及之前对Hash表等算法的学习还是有一定作用的。同时，也顺便对暴雪的Hash函数算是做了个测试，其的确能解决一般的冲突性问题，创造这个算法的人不简单呐。</p>
+
+            
+            </div>
+        
+    
+</div>
+
+        
+        
+    
+    
+
+</body></html>

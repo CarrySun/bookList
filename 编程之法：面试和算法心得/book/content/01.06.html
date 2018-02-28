@@ -1,0 +1,181 @@
+<?xml version='1.0' encoding='utf-8'?>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-tw" xml:lang="zh-tw">
+  <head>
+    <title>1.6 字符串的全排列 | 编程之法：面试和算法心得</title>
+    <meta name="description" content=""/>
+    <meta name="generator" content="GitBook 2.6.5"/>
+    <meta name="author" content="wizardforcel"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css"/>
+<link href="page_styles.css" rel="stylesheet" type="text/css"/>
+</head>
+  <body class="dir">
+        
+        
+<div class="page">
+    
+        <h1 class="book-chapter" id="calibre_toc_11">1.6 字符串的全排列</h1>
+        
+            <div class="section" id="section-">
+            
+                <h2 id="字符串的全排列" class="calibre8">字符串的全排列</h2>
+<h3 id="题目描述" class="calibre9">题目描述</h3>
+<p class="calibre6">输入一个字符串，打印出该字符串中字符的所有排列。</p>
+<p class="calibre6">例如输入字符串abc，则输出由字符a、b、c 所能排列出来的所有字符串</p>
+<p class="calibre6">abc、acb、bac、bca、cab 和 cba。</p>
+<h3 id="分析与解法" class="calibre9">分析与解法</h3>
+<h4 id="解法一、递归实现" class="calibre16">解法一、递归实现</h4>
+<p class="calibre6">从集合中依次选出每一个元素，作为排列的第一个元素，然后对剩余的元素进行全排列，如此递归处理，从而得到所有元素的全排列。以对字符串abc进行全排列为例，我们可以这么做：以abc为例</p>
+<ul class="calibre10">
+<li class="calibre11">固定a，求后面bc的排列：abc，acb，求好后，a和b交换，得到bac</li>
+<li class="calibre11">固定b，求后面ac的排列：bac，bca，求好后，c放到第一位置，得到cba</li>
+<li class="calibre11">固定c，求后面ba的排列：cba，cab。</li>
+</ul>
+<p class="calibre6">代码可如下编写所示：</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c"><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">CalcAllPermutation</span><span class="hljs-params">(<span class="hljs-keyword">char</span>* perm, <span class="hljs-keyword">int</span> from, <span class="hljs-keyword">int</span> to)</span>
+</span>{
+    <span class="hljs-keyword">if</span> (to &lt;= <span class="hljs-params">1</span>)
+    {
+        <span class="hljs-keyword">return</span>;
+    }
+
+    <span class="hljs-keyword">if</span> (from == to)
+    {
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-params">0</span>; i &lt;= to; i++)
+            <span class="hljs-params">cout</span> &lt;&lt; perm[i];
+        <span class="hljs-params">cout</span> &lt;&lt; endl;
+    }
+    <span class="hljs-keyword">else</span>
+    {
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> j = from; j &lt;= to; j++)
+        {
+            swap(perm[j], perm[from]);
+            CalcAllPermutation(perm, from + <span class="hljs-params">1</span>, to);
+            swap(perm[j], perm[from]);
+        }
+    }
+}
+</code></pre>
+<h4 id="解法二、字典序排列" class="calibre16">解法二、字典序排列</h4>
+<p class="calibre6">首先，咱们得清楚什么是字典序。根据维基百科的定义：给定两个偏序集A和B,(a,b)和(a′,b′)属于笛卡尔集 A × B，则字典序定义为</p>
+<p class="calibre6">(a,b) ≤ (a′,b′) 当且仅当 a &lt; a′ 或 (a = a′ 且 b ≤ b′)。</p>
+<p class="calibre6">所以给定两个字符串，逐个字符比较，那么先出现较小字符的那个串字典顺序小，如果字符一直相等，较短的串字典顺序小。例如：abc &lt; abcd &lt; abde &lt; afab。</p>
+<p class="calibre6">那有没有这样的算法，使得</p>
+<ul class="calibre10">
+<li class="calibre11">起点： 字典序最小的排列, 1-n , 例如12345</li>
+<li class="calibre11">终点： 字典序最大的排列，n-1, 例如54321</li>
+<li class="calibre11">过程： 从当前排列生成字典序刚好比它大的下一个排列</li>
+</ul>
+<p class="calibre6">答案是肯定的：有，即是STL中的next_permutation算法。</p>
+<p class="calibre6">在了解next_permutation算法是怎么一个过程之前，咱们得先来分析下“下一个排列”的性质。</p>
+<ul class="calibre10">
+<li class="calibre11">假定现有字符串(A)x(B)，它的下一个排列是：(A)y(B’)，其中A、B和B’是“字符串”(可能为空），x和y是“字符”，前缀相同，都是A，且一定有y &gt; x。</li>
+<li class="calibre11">那么，为使下一个排列字典顺序尽可能小，必有：<ul class="calibre13">
+<li class="calibre11">A尽可能长</li>
+<li class="calibre11">y尽可能小</li>
+<li class="calibre11">B’里的字符按由小到大递增排列</li>
+</ul>
+</li>
+</ul>
+<p class="calibre6">现在的问题是：找到x和y。怎么找到呢？咱们来看一个例子。</p>
+<p class="calibre6">比如说，现在我们要找21543的下一个排列，我们可以从左至右逐个扫描每个数，看哪个能增大（至于如何判定能增大，是根据如果一个数右面有比它大的数存在，那么这个数就能增大），我们可以看到最后一个能增大的数是：x = 1。</p>
+<p class="calibre6">而1应该增大到多少？1能增大到它右面比它大的那一系列数中最小的那个数，即：y = 3，故此时21543的下一个排列应该变为23xxx，显然 xxx(对应之前的B’）应由小到大排，于是我们最终找到比“21543”大，但字典顺序尽量小的23145，找到的23145刚好比21543大。</p>
+<p class="calibre6">由这个例子可以得出next_permutation算法流程为：</p>
+<p class="calibre6">next_permutation算法</p>
+<ul class="calibre10">
+<li class="calibre11"><p class="calibre6">定义</p>
+<ul class="calibre13">
+<li class="calibre11">升序：相邻两个位置ai &lt; ai+1，ai 称作该升序的首位</li>
+</ul>
+</li>
+<li class="calibre11"><p class="calibre6">步骤（二找、一交换、一翻转）</p>
+<ul class="calibre13">
+<li class="calibre11">找到排列中最后（最右）一个升序的首位位置i，x = ai </li>
+<li class="calibre11">找到排列中第i位右边最后一个比ai 大的位置j，y = aj</li>
+<li class="calibre11">交换x，y</li>
+<li class="calibre11">把第(i+ 1)位到最后的部分翻转</li>
+</ul>
+</li>
+</ul>
+<p class="calibre6">还是拿上面的21543举例，那么，应用next_permutation算法的过程如下：</p>
+<ul class="calibre10">
+<li class="calibre11">x = 1；</li>
+<li class="calibre11">y = 3</li>
+<li class="calibre11">1和3交换<ul class="calibre13">
+<li class="calibre11">得23541</li>
+</ul>
+</li>
+<li class="calibre11">翻转541<ul class="calibre13">
+<li class="calibre11">得23145</li>
+</ul>
+</li>
+</ul>
+<p class="calibre6">23145即为所求的21543的下一个排列。参考实现代码如下：</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c"><span class="hljs-function"><span class="hljs-keyword">bool</span> <span class="hljs-title">CalcAllPermutation</span><span class="hljs-params">(<span class="hljs-keyword">char</span>* perm, <span class="hljs-keyword">int</span> num)</span></span>{
+    <span class="hljs-keyword">int</span> i;
+
+    <span class="hljs-title">//①找到排列中最后（最右）一个升序的首位位置i，x = ai</span>
+    <span class="hljs-keyword">for</span> (i = num - <span class="hljs-params">2</span>; (i &gt;= <span class="hljs-params">0</span>) &amp;&amp; (perm[i] &gt;= perm[i + <span class="hljs-params">1</span>]); --i){
+        ;
+    }
+    <span class="hljs-title">// 已经找到所有排列</span>
+    <span class="hljs-keyword">if</span> (i &lt; <span class="hljs-params">0</span>){
+        <span class="hljs-keyword">return</span> <span class="hljs-params">false</span>;
+    }
+
+    <span class="hljs-keyword">int</span> k;
+    <span class="hljs-title">//②找到排列中第i位右边最后一个比ai 大的位置j，y = aj</span>
+    <span class="hljs-keyword">for</span> (k = num - <span class="hljs-params">1</span>; (k &gt; i) &amp;&amp; (perm[k] &lt;= perm[i]); --k){
+        ;
+    }
+
+    <span class="hljs-title">//③交换x，y</span>
+    swap(perm[i], perm[k]);
+    <span class="hljs-title">//④把第(i+ 1)位到最后的部分翻转</span>
+    reverse(perm + i + <span class="hljs-params">1</span>, perm + num);
+    <span class="hljs-keyword">return</span> <span class="hljs-params">true</span>;
+}
+</code></pre>
+<p class="calibre6">然后在主函数里循环判断和调用calcAllPermutation函数输出全排列即可。</p>
+<h4 id="解法总结" class="calibre16">解法总结</h4>
+<p class="calibre6">由于全排列总共有n!种排列情况，所以不论解法一中的递归方法，还是上述解法二的字典序排列方法，这两种方法的时间复杂度都为O(n!)。</p>
+<h3 id="类似问题" class="calibre9">类似问题</h3>
+<p class="calibre6">1、已知字符串里的字符是互不相同的，现在任意组合，比如ab，则输出aa，ab，ba，bb，编程按照字典序输出所有的组合。</p>
+<p class="calibre6">分析：非简单的全排列问题（跟全排列的形式不同,abc全排列的话，只有6个不同的输出）。
+本题可用递归的思想，设置一个变量表示已输出的个数，然后当个数达到字符串长度时，就输出。</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c"><span class="hljs-title">//copyright@ 一直很安静 &amp;&amp; World Gao</span>
+<span class="hljs-title">//假设str已经有序</span>
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">perm</span><span class="hljs-params">(<span class="hljs-keyword">char</span>* result, <span class="hljs-keyword">char</span> *str, <span class="hljs-keyword">int</span> size, <span class="hljs-keyword">int</span> resPos)</span>
+</span>{
+  <span class="hljs-keyword">if</span>(resPos == size)
+    <span class="hljs-params">printf</span>(<span class="hljs-string">"%s\n"</span>, result);
+  <span class="hljs-keyword">else</span>
+    {
+      <span class="hljs-keyword">for</span>(<span class="hljs-keyword">int</span> i = <span class="hljs-params">0</span>; i &lt; size; ++i)
+        {
+          result[resPos] = str[i];
+          perm(result, str, size, resPos + <span class="hljs-params">1</span>);
+        }
+    }
+}
+</code></pre>
+<p class="calibre6">2、如果不是求字符的所有排列，而是求字符的所有组合，应该怎么办呢？当输入的字符串中含有相同的字符串时，相同的字符交换位置是不同的排列，但是同一个组合。举个例子，如果输入abc，它的组合有a、b、c、ab、ac、bc、abc。</p>
+<p class="calibre6">3、写一个程序，打印出以下的序列。</p>
+<p class="calibre6">(a),(b),(c),(d),(e)........(z)</p>
+<p class="calibre6">(a,b),(a,c),(a,d),(a,e)......(a,z),(b,c),(b,d).....(b,z),(c,d).....(y,z)</p>
+<p class="calibre6">(a,b,c),(a,b,d)....(a,b,z),(a,c,d)....(x,y,z)</p>
+<p class="calibre6">....</p>
+<p class="calibre6">(a,b,c,d,.....x,y,z)</p>
+
+            
+            </div>
+        
+    
+</div>
+
+        
+        
+    
+    
+
+</body></html>

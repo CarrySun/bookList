@@ -1,0 +1,137 @@
+<?xml version='1.0' encoding='utf-8'?>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-tw" xml:lang="zh-tw">
+  <head>
+    <title>2.2 寻找和为定值的两个数 | 编程之法：面试和算法心得</title>
+    <meta name="description" content=""/>
+    <meta name="generator" content="GitBook 2.6.5"/>
+    <meta name="author" content="wizardforcel"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css"/>
+<link href="page_styles.css" rel="stylesheet" type="text/css"/>
+</head>
+  <body class="dir">
+        
+        
+<div class="page">
+    
+        <h1 class="book-chapter" id="calibre_toc_16">2.2 寻找和为定值的两个数</h1>
+        
+            <div class="section" id="section-">
+            
+                <h1 id="寻找和为定值的两个数" class="calibre5">寻找和为定值的两个数</h1>
+<h2 id="题目描述" class="calibre14">题目描述</h2>
+<p class="calibre6">输入一个数组和一个数字，在数组中查找两个数，使得它们的和正好是输入的那个数字。</p>
+<p class="calibre6">要求时间复杂度是O(N)。如果有多对数字的和等于输入的数字，输出任意一对即可。</p>
+<p class="calibre6">例如输入数组1、2、4、7、11、15和数字15。由于4+11=15，因此输出4和11。</p>
+<h3 id="分析与解法" class="calibre9">分析与解法</h3>
+<p class="calibre6">咱们试着一步一步解决这个问题（注意阐述中数列有序无序的区别）：</p>
+<p class="calibre6">直接穷举，从数组中任意选取两个数，判定它们的和是否为输入的那个数字。此举复杂度为O(N^2)。很显然，我们要寻找效率更高的解法</p>
+<p class="calibre6">题目相当于，对每个a[i]，查找sum-a[i]是否也在原始序列中，每一次要查找的时间都要花费为O(N)，这样下来，最终找到两个数还是需要O（N^2）的复杂度。那如何提高查找判断的速度呢？</p>
+<p class="calibre6">答案是二分查找，可以将O(N)的查找时间提高到O(log N)，这样对于N个a[i]，都要花logN的时间去查找相对应的sum-a[i]是否在原始序列中，总的时间复杂度已降为O(N log N)，且空间复杂度为O(1)。
+（如果有序，直接二分O(N log N)，如果无序，先排序后二分，复杂度同样为O（N log N + N log N）= O(N log N)，空间复杂度总为O(1)）。</p>
+<p class="calibre6">可以继续优化做到时间O(N)么？</p>
+<h4 id="解法一" class="calibre16">解法一</h4>
+<p class="calibre6">根据前面的分析，a[i]在序列中，如果a[i]+a[k]=sum的话，那么sum-a[i]（a[k])也必然在序列中。
+举个例子，如下：
+原始序列：</p>
+<ul class="calibre10">
+<li class="calibre11">1、 2、 4、 7、11、15</li>
+</ul>
+<p class="calibre6">用输入数字15减一下各个数，得到对应的序列为：</p>
+<ul class="calibre10">
+<li class="calibre11">14、13、11、8、4、 0</li>
+</ul>
+<p class="calibre6">第一个数组以一指针i 从数组最左端开始向右扫描，第二个数组以一指针j 从数组最右端开始向左扫描，如果第一个数组出现了和第二个数组一样的数，即a[<em class="calibre15">i]=a[</em>j]，就找出这俩个数来了。
+如上，i，j最终在第一个，和第二个序列中找到了相同的数4和11，所以符合条件的两个数，即为4+11=15。
+怎么样，两端同时查找，时间复杂度瞬间缩短到了O(N)，但却同时需要O(N)的空间存储第二个数组。</p>
+<h4 id="解法二" class="calibre16">解法二</h4>
+<p class="calibre6">当题目对时间复杂度要求比较严格时，我们可以考虑下用空间换时间，上述解法一即是此思想，此外，构造hash表也是典型的用空间换时间的处理办法。</p>
+<p class="calibre6">即给定一个数字，根据hash映射查找另一个数字是否也在数组中，只需用O(1)的时间，前提是经过O(N)时间的预处理，和用O(N)的空间构造hash表。</p>
+<p class="calibre6">但能否做到在时间复杂度为O(N)的情况下，空间复杂度能进一步降低达到O(1)呢？</p>
+<h4 id="解法三" class="calibre16">解法三</h4>
+<p class="calibre6">如果数组是无序的，先排序(N log N)，然后用两个指针i，j，各自指向数组的首尾两端，令i=0，j=n-1，然后i++，j--，逐次判断a[i]+a[j]?=sum，</p>
+<ul class="calibre10">
+<li class="calibre11">如果某一刻a[i]+a[j] &gt; sum，则要想办法让sum的值减小，所以此刻i不动，j--；</li>
+<li class="calibre11">如果某一刻a[i]+a[j] &lt; sum，则要想办法让sum的值增大，所以此刻i++，j不动。</li>
+</ul>
+<p class="calibre6">所以，数组无序的时候，时间复杂度最终为O(N log N + N)=O(N log N)。</p>
+<p class="calibre6">如果原数组是有序的，则不需要事先的排序，直接用两指针分别从头和尾向中间扫描，O(N)搞定，且空间复杂度还是O(1)。</p>
+<p class="calibre6">下面，咱们先来实现此思路（这里假定数组已经是有序的），代码可以如下编写：</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c"><span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">TwoSum</span><span class="hljs-params">(<span class="hljs-keyword">int</span> data[], <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">int</span> length, <span class="hljs-keyword">int</span> sum)</span>
+</span>{
+    <span class="hljs-title">//sort(s, s+n);   如果数组非有序的，那就事先排好序O(N log N)</span>
+
+    <span class="hljs-keyword">int</span> begin = <span class="hljs-params">0</span>;
+    <span class="hljs-keyword">int</span> end = length - <span class="hljs-params">1</span>;
+
+    <span class="hljs-title">//俩头夹逼，或称两个指针两端扫描法，很经典的方法，O(N)</span>
+    <span class="hljs-keyword">while</span> (begin &lt; end)
+    {
+        <span class="hljs-keyword">long</span> currSum = data[begin] + data[end];
+
+        <span class="hljs-keyword">if</span> (currSum == sum)
+        {
+            <span class="hljs-title">//题目只要求输出满足条件的任意一对即可</span>
+            <span class="hljs-params">printf</span>(<span class="hljs-string">"%d %d\n"</span>, data[begin], data[end]);
+
+            <span class="hljs-title">//如果需要所有满足条件的数组对，则需要加上下面两条语句：</span>
+            <span class="hljs-title">//begin++</span>
+            <span class="hljs-title">//end--</span>
+            <span class="hljs-keyword">break</span>;
+        }
+        <span class="hljs-keyword">else</span>{
+            <span class="hljs-keyword">if</span> (currSum &lt; sum)
+                begin++;
+            <span class="hljs-keyword">else</span>
+                end--;
+        }
+    }
+}
+</code></pre>
+<h3 id="解法总结" class="calibre9">解法总结</h3>
+<p class="calibre6">不论原序列是有序还是无序，解决这类题有以下三种办法：</p>
+<ul class="calibre10">
+<li class="calibre11">1、二分（若无序，先排序后二分），时间复杂度总为O(N log N)，空间复杂度为O（1）；</li>
+<li class="calibre11">2、扫描一遍X-S[i]  映射到一个数组或构造hash表，时间复杂度为O(N)，空间复杂度为O(N)；</li>
+<li class="calibre11">3、两个指针两端扫描（若无序，先排序后扫描），时间复杂度最后为：有序O(N)，无序O(N log N + N)=O(N log N)，空间复杂度都为O(1)。</li>
+</ul>
+<p class="calibre6">所以，要想达到时间O(N)，空间O(1)的目标，除非原数组是有序的（指针扫描法），不然，当数组无序的话，就只能先排序，后指针扫描法或二分（时间 O(Nlog N)，空间O(1)），或映射或hash（时间O(N)，空间O(N)）。时间或空间，必须牺牲一个，达到平衡。</p>
+<p class="calibre6">综上，若是数组有序的情况下，优先考虑两个指针两端扫描法，以达到最佳的时O(N)，空O(1)效应。否则，如果要排序的话，时间复杂度最快当然是只能达到O(N log N)，空间O(1)则不在话下。</p>
+<h2 id="问题扩展" class="calibre8">问题扩展</h2>
+<ol class="calibre1">
+<li class="calibre11">如果在返回找到的两个数的同时，还要求你返回这两个数的位置列？</li>
+<li class="calibre11">如果需要输出所有满足条件的整数对呢?</li>
+<li class="calibre11">如果把题目中的要你寻找的两个数改为“多个数”，或任意个数列?</li>
+</ol>
+<h2 id="举一反三" class="calibre8">举一反三</h2>
+<p class="calibre6">1、在二元树中找出和为某一值的所有路径
+输入一个整数和一棵二元树，从树的根结点开始往下访问一直到叶结点所经过的所有结点形成一条路径，然后打印出和与输入整数相等的所有路径。
+例如输入整数22和如下二元树</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c">10  
+</code></pre><p class="calibre6">  /   \<br class="calibre21"/> 5    12<br class="calibre21"/>/ \<br class="calibre21"/>4  7</p>
+<p class="calibre6">则打印出两条路径：10, 12和10, 5, 7。
+其中，二元树节点的数据结构定义为：</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c">struct BinaryTreeNode // a node in the binary tree
+{
+    int m_nValue; // value of node
+    BinaryTreeNode *m_pLeft; // left child of node
+    BinaryTreeNode *m_pRight; // right child of node
+};
+</code></pre><p class="calibre6">2、有一个数组a，设有一个值n。在数组中找到两个元素a[i]和a[j]，使得a[i]+a[j]等于n，求出所有满足以上条件的i和j。</p>
+<p class="calibre6">3、3-sum问题</p>
+<p class="calibre6">给定一个整数数组，判断能否从中找出3个数a、b、c，使得他们的和为0，如果能，请找出所有满足和为0个3个数对。</p>
+<p class="calibre6">4、4-sum问题</p>
+<p class="calibre6">给定一个整数数组，判断能否从中找出4个数a、b、c、d，使得他们的和为0，如果能，请找出所有满足和为0个4个数对。</p>
+
+            
+            </div>
+        
+    
+</div>
+
+        
+        
+    
+    
+
+</body></html>

@@ -1,0 +1,74 @@
+<?xml version='1.0' encoding='utf-8'?>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-tw" xml:lang="zh-tw">
+  <head>
+    <title>5.4 交替字符串 | 编程之法：面试和算法心得</title>
+    <meta name="description" content=""/>
+    <meta name="generator" content="GitBook 2.6.5"/>
+    <meta name="author" content="wizardforcel"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css"/>
+<link href="page_styles.css" rel="stylesheet" type="text/css"/>
+</head>
+  <body class="dir">
+        
+        
+<div class="page">
+    
+        <h1 class="book-chapter" id="calibre_toc_41">5.4 交替字符串</h1>
+        
+            <div class="section" id="section-">
+            
+                <h2 id="交替字符串" class="calibre8">交替字符串</h2>
+<h3 id="题目描述" class="calibre9">题目描述</h3>
+<p class="calibre6">输入三个字符串s1、s2和s3，判断第三个字符串s3是否由前两个字符串s1和s2交错而成，即不改变s1和s2中各个字符原有的相对顺序，例如当s1 = “aabcc”，s2 = “dbbca”，s3 = “aadbbcbcac”时，则输出true，但如果s3=“accabdbbca”，则输出false。</p>
+<h3 id="分析与解法" class="calibre9">分析与解法</h3>
+<p class="calibre6">此题不能简单的排序，因为一旦排序，便改变了s1或s2中各个字符原始的相对顺序，既然不能排序，咱们可以考虑下用动态规划的方法，令dp[i][j]代表s3[0...i+j-1]是否由s1[0...i-1]和s2[0...j-1]的字符组成</p>
+<ul class="calibre10">
+<li class="calibre11">如果s1当前字符（即s1[i-1]）等于s3当前字符（即s3[i+j-1]），而且dp[i-1][j]为真，那么可以取s1当前字符而忽略s2的情况，dp[i][j]返回真；</li>
+<li class="calibre11">如果s2当前字符等于s3当前字符，并且dp[i][j-1]为真，那么可以取s2而忽略s1的情况，dp[i][j]返回真，其它情况，dp[i][j]返回假</li>
+</ul>
+<p class="calibre6">参考代码如下：</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c"><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">boolean</span> <span class="hljs-title">IsInterleave</span><span class="hljs-params">(String s1, String <span class="hljs-params">2</span>, String <span class="hljs-params">3</span>)</span></span>{
+    <span class="hljs-keyword">int</span> n = s1.length(), m = s2.length(), s = s3.length();
+
+    <span class="hljs-title">//如果长度不一致，则s3不可能由s1和s2交错组成</span>
+    <span class="hljs-keyword">if</span> (n + m != s)
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">false</span>;
+
+    <span class="hljs-keyword">boolean</span>[][]dp = <span class="hljs-keyword">new</span> <span class="hljs-keyword">boolean</span>[n + <span class="hljs-params">1</span>][m + <span class="hljs-params">1</span>];
+
+    <span class="hljs-title">//在初始化边界时，我们认为空串可以由空串组成，因此dp[0][0]赋值为true。</span>
+    dp[<span class="hljs-params">0</span>][<span class="hljs-params">0</span>] = <span class="hljs-keyword">true</span>;
+
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-params">0</span>; i &lt; n + <span class="hljs-params">1</span>; i++){
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> j = <span class="hljs-params">0</span>; j &lt; m + <span class="hljs-params">1</span>; j++){
+            <span class="hljs-keyword">if</span> ( dp[i][j] || (i - <span class="hljs-params">1</span> &gt;= <span class="hljs-params">0</span> &amp;&amp; dp[i - <span class="hljs-params">1</span>][j] == <span class="hljs-keyword">true</span> &amp;&amp;
+                <span class="hljs-title">//取s1字符</span>
+                s1.charAT(i - <span class="hljs-params">1</span>) == s3.charAT(i + j - <span class="hljs-params">1</span>)) ||
+
+                (j - <span class="hljs-params">1</span> &gt;= <span class="hljs-params">0</span> &amp;&amp; dp[i][j - <span class="hljs-params">1</span>] == <span class="hljs-keyword">true</span> &amp;&amp;
+                <span class="hljs-title">//取s2字符</span>
+                s2.charAT(j - <span class="hljs-params">1</span>) == s3.charAT(i + j - <span class="hljs-params">1</span>)) )
+
+                dp[i][j] = <span class="hljs-keyword">true</span>;
+            <span class="hljs-keyword">else</span>
+                dp[i][j] = <span class="hljs-keyword">false</span>;
+        }
+    }
+    <span class="hljs-keyword">return</span> dp[n][m]
+}
+</code></pre>
+<p class="calibre6">理解本题及上段代码，对真正理解动态规划有一定帮助。</p>
+
+            
+            </div>
+        
+    
+</div>
+
+        
+        
+    
+    
+
+</body></html>

@@ -1,0 +1,300 @@
+<?xml version='1.0' encoding='utf-8'?>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-tw" xml:lang="zh-tw">
+  <head>
+    <title>最小操作数 | 编程之法：面试和算法心得</title>
+    <meta name="description" content=""/>
+    <meta name="generator" content="GitBook 2.6.5"/>
+    <meta name="author" content="wizardforcel"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css"/>
+<link href="page_styles.css" rel="stylesheet" type="text/css"/>
+</head>
+  <body class="dir">
+        
+        
+<div class="page">
+    
+        <h1 class="book-chapter" id="calibre_toc_82">最小操作数</h1>
+        
+            <div class="section" id="section-">
+            
+                <h2 id="最小操作数" class="calibre8">最小操作数</h2>
+<h3 id="题目描述" class="calibre9">题目描述</h3>
+<p class="calibre6">给定一个单词集合Dict，其中每个单词的长度都相同。现从此单词集合Dict中抽取两个单词A、B，我们希望通过若干次操作把单词A变成单词B，每次操作可以改变单词的一个字母，同时，新产生的单词必须是在给定的单词集合Dict中。求所有行得通步数最少的修改方法。</p>
+<p class="calibre6">举个例子如下：</p>
+<p class="calibre6">  Given:
+     A = "hit"
+     B = "cog"
+     Dict = ["hot","dot","dog","lot","log"]
+  Return
+   [
+     ["hit","hot","dot","dog","cog"],
+     ["hit","hot","lot","log","cog"]
+   ]</p>
+<p class="calibre6">即把字符串A = "hit"转变成字符串B = "cog"，有以下两种可能：</p>
+<p class="calibre6">"hit" -&gt; "hot" -&gt;  "dot" -&gt;  "dog" -&gt; "cog"；</p>
+<p class="calibre6">"hit" -&gt;  "hot" -&gt;  "lot" -&gt;  "log"  -&gt;"cog"。</p>
+<h2 id="分析与解法" class="calibre8">分析与解法</h2>
+<p class="calibre6">本题是一个典型的图搜索算法问题。此题看似跟本系列的第29章的字符串编辑距离相似，但其实区别特别大，原因是最短编辑距离是让某个单词增加一个字符或减少一个字符或修改一个字符达到目标单词，来求变换的最少次数，但此最小操作数问题就只是改变一个字符。 </p>
+<p class="calibre6">通过<a href="http://blog.csdn.net/v_JULY_v/article/details/6111353" target="_blank" class="pcalibre2 pcalibre1 calibre7 pcalibre">此文</a>，我们知道，在图搜索算法中，有深度优先遍历DFS和广度优先遍历BFS，而题目中并没有给定图，所以需要我们自己建立图。</p>
+<p class="calibre6"><img src="../images/32~33/32.1.jpg" alt="" class="calibre19"/></p>
+<p class="calibre6">涉及到图就有这么几个问题要思考，节点是什么？边如何建立？图是有方向的还是无方向的？包括建好图之后，如何记录单词序列等等都是我们要考虑的问题。</p>
+<h3 id="解法一、单向bfs法" class="calibre9">解法一、单向BFS法</h3>
+<p class="calibre6"><strong class="calibre12">1</strong>、建图</p>
+<p class="calibre6">对于本题，我们的图的节点就是字典里的单词，两个节点有连边，对应着我们可以把一个单词按照规则变为另外一个单词。比如我们有单词hat，它应该与单词cat有一条连边，因为我们可以把h变为c，反过来我们也可以把c变为h，所以我们建立的连边应该是无向的。</p>
+<p class="calibre6">如何建图？有两种办法，</p>
+<ul class="calibre10">
+<li class="calibre11"><p class="calibre6">第一种方法是：我们可以把字典里的任意两个单词，通过循环判断一下这两个单词是否只有一个位置上的字母不同。即假设字典里有n个单词，我们遍历任意两个单词的复杂度是O(n2)，如果每个单词长度为length，我们判断两个单词是否连边的复杂度是O(length)，所以这个建图的总复杂度是O(n2*length)。但当n比较大时，这个复杂度非常高，有没有更好的方法呢？</p>
+</li>
+<li class="calibre11"><p class="calibre6">第二种方法是：我们把字典里地每个单词的每个位置的字母修改一下，从字典里查找一下（若用基于red-black tree的map查找，其查找复杂度为O(logn)，若用基于hashmap的unordered_map，则查找复杂度为O(1)），修改后的单词是否在字典里出现过。即我们需要遍历字典里地每一个单词O(n)，尝试修改每个位置的每个字母，对每个位置我们需要尝试26个字母（其实是25个，因为要改得和原来不同），因此这部分复杂度是O(26<em class="calibre15">length)，总复杂度是O(26 </em> n * length)  （第二种方法优化版：这第二种方法能否更优？在第二种方法中，我们对每个单词每个位置尝试了26次修改，事实上我们可以利用图是无向的这一特点，我们对每个位置试图把该位置的字母变到字典序更大的字母。例如，我们只考虑cat变成hat，而不考虑hat变成cat，因为再之前已经把无向边建立了。这样，只进行一半的修改次数，从而减少程序的运行时间。当然这个优化从复杂度上来讲是常数的，因此称为常数优化，此虽算是一种改进，但不足以成为第三种方法，原因是我们经常忽略O背后隐藏的常数）。</p>
+</li>
+</ul>
+<p class="calibre6">OK，上面两种方法孰优孰劣呢？直接比较n2<em class="calibre15">length 与 26 </em> n * length的大小。很明显，通常情况下，字典里的单词个数非常多，也就是n比较大，因此第二种方法效果会好一些，稍后的参考代码也会选择上述第二种方法的优化。</p>
+<p class="calibre6"><strong class="calibre12">2</strong>、记录单词序列</p>
+<p class="calibre6">对于最简单的bfs，我们是如何记录路径的？如果只需要记录一条最短路径的话，我们可以对每个走到的位置，记录走到它的前一个位置。这样到终点后，我们可以不断找到它的前一个位置。我们利用了最短路径的一个特点：即第二次经过一个节点的时候，路径长度不比第一次经过它时短。因此这样的路径是没有圈的。</p>
+<p class="calibre6">但是本题需要记录全部的路径，我们第二次经过一个节点时，路径长度可能会和第一次经过一个节点时路径长度一样。这是因为，我们可能在第i层中有多个节点可以到达第(i + 1)层的同一个位置，这样那个位置有多条路径都是最短路径。</p>
+<p class="calibre6">如何解决呢？——我们记录经过这个位置的前面所有位置的集合。这样一个节点的前驱不是一个节点，而是一个节点的集合。如此，当我们第二次经过一个第(i+ 1)层的位置时，我们便保留前面那第i层位置的集合作为前驱。</p>
+<p class="calibre6"><strong class="calibre12">3</strong>、遍历</p>
+<p class="calibre6">解决了以上两个问题，我们最终得到的是什么？如果有解的话，我们最终得到的是从终点开始的前一个可能单词的集合，对每个单词，我们都有能得到它的上一个单词的集合，直到起点。这就是bfs分层之后的图，我们从终点开始遍历这个图的到起点的所有路径，就得到了所有的解，这个遍历我们可以采用之前介绍的dfs方法（路径的数目可能非常多）。</p>
+<p class="calibre6">其实，为了简单起见，我们可以从终点开始bfs，因为记录路径记录的是之前的节点，也就是反向的。这样最终可以按顺序从起点遍历到终点的所有路径。</p>
+<p class="calibre6">参考代码如下：</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c"><span class="hljs-title">//copyright@caopengcs     </span>
+<span class="hljs-title">//updated@July 08/12/2013    </span>
+<span class="hljs-keyword">class</span> Solution    
+{    
+<span class="hljs-keyword">public</span>:    
+    <span class="hljs-title">// help 函数负责找到所有的路径    </span>
+    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">help</span><span class="hljs-params">(intx,<span class="hljs-params">vector</span>&lt;<span class="hljs-keyword">int</span>&gt; &amp;d, <span class="hljs-params">vector</span>&lt;<span class="hljs-params">string</span>&gt; &amp;word,<span class="hljs-params">vector</span>&lt;<span class="hljs-params">vector</span>&lt;<span class="hljs-keyword">int</span>&gt; &gt; &amp;next,<span class="hljs-params">vector</span>&lt;<span class="hljs-params">string</span>&gt; &amp;path,<span class="hljs-params">vector</span>&lt;<span class="hljs-params">vector</span>&lt;<span class="hljs-params">string</span>&gt; &gt; &amp;answer)</span>
+    </span>{
+        path.push_back(word[x]);    
+        <span class="hljs-keyword">if</span> (d[x] == <span class="hljs-params">0</span>)
+        {   <span class="hljs-title">//已经达到终点了</span>
+            answer.push_back(path);    
+        }    
+        <span class="hljs-keyword">else</span>
+        {
+            <span class="hljs-keyword">int</span> i;    
+            <span class="hljs-keyword">for</span> (i = <span class="hljs-params">0</span>; i &lt;next[x].size(); ++i)
+            {
+                help(next[x][i],d, word, next,path,answer);    
+            }    
+        }    
+        path.pop_back();   <span class="hljs-title">//回溯    </span>
+    }    
+
+    <span class="hljs-params">vector</span>&lt;<span class="hljs-params">vector</span>&lt;<span class="hljs-params">string</span>&gt;&gt; findLadders(<span class="hljs-params">string</span> start, <span class="hljs-params">string</span> end, <span class="hljs-params">set</span>&lt;<span class="hljs-params">string</span>&gt;&amp; dict)    
+    {    
+        <span class="hljs-params">vector</span>&lt;<span class="hljs-params">vector</span>&lt;<span class="hljs-params">string</span>&gt; &gt; answer;    
+        <span class="hljs-keyword">if</span> (start == end)
+        {   <span class="hljs-title">//起点终点恰好相等</span>
+            <span class="hljs-keyword">return</span> answer;    
+        }    
+        <span class="hljs-title">//把起点终点加入字典的map    </span>
+        dict.insert(start);    
+        dict.insert(end);    
+        <span class="hljs-params">set</span>&lt;<span class="hljs-params">string</span>&gt;::iterator dt;    
+        <span class="hljs-params">vector</span>&lt;<span class="hljs-params">string</span>&gt; word;    
+        <span class="hljs-params">map</span>&lt;<span class="hljs-params">string</span>,<span class="hljs-keyword">int</span>&gt;allword;    
+        <span class="hljs-title">//把set转换为map，这样每个单词都有编号了。    </span>
+        <span class="hljs-keyword">for</span> (dt = dict.begin(); dt!= dict.end(); ++dt)
+        {
+            word.push_back(*dt);    
+            allword.insert(make_pair(*dt, allword.size()));    
+        }    
+
+        <span class="hljs-title">//建立连边 邻接表    </span>
+        <span class="hljs-params">vector</span>&lt;<span class="hljs-params">vector</span>&lt;<span class="hljs-keyword">int</span>&gt; &gt; con;    
+        <span class="hljs-keyword">int</span> i,j,n =word.size(),temp,len = word[<span class="hljs-params">0</span>].length();    
+        con.resize(n);    
+        <span class="hljs-keyword">for</span> (i = <span class="hljs-params">0</span>; i &lt; n; ++i)
+        {
+            <span class="hljs-keyword">for</span> (j = <span class="hljs-params">0</span>; j &lt;len; ++j)
+            {
+                <span class="hljs-keyword">char</span> c;    
+                <span class="hljs-keyword">for</span> (c =word[i][j] + <span class="hljs-params">1</span>; c &lt;= <span class="hljs-string">'z'</span>; ++c)
+                {  <span class="hljs-title">//根据上面第二种方法的优化版的思路，让每个单词每个位置变更大</span>
+                    <span class="hljs-keyword">char</span> last =word[i][j];    
+                    word[i][j] =c;    
+                    <span class="hljs-params">map</span>&lt;<span class="hljs-params">string</span>,<span class="hljs-keyword">int</span>&gt;::iterator t = allword.find(word[i]);    
+                    <span class="hljs-keyword">if</span> (t !=allword.end())
+                    {
+                        con[i].push_back(t-&gt;second);    
+                        con[t-&gt;second].push_back(i);    
+                    }    
+                    word[i][j] =last;    
+                }    
+            }    
+        }    
+
+        <span class="hljs-title">//以下是标准bfs过程    </span>
+        <span class="hljs-params">queue</span>&lt;<span class="hljs-keyword">int</span>&gt; q;    
+        <span class="hljs-params">vector</span>&lt;<span class="hljs-keyword">int</span>&gt; d;    
+        d.resize(n, -<span class="hljs-params">1</span>);    
+        <span class="hljs-keyword">int</span> from = allword[start],to = allword[end];    
+        d[to] = <span class="hljs-params">0</span>;  <span class="hljs-title">//d记录的是路径长度，-1表示没经过    </span>
+        q.push(to);    
+        <span class="hljs-params">vector</span>&lt;<span class="hljs-params">vector</span>&lt;<span class="hljs-keyword">int</span>&gt; &gt; next;    
+        next.resize(n);    
+        <span class="hljs-keyword">while</span> (!q.empty())
+        {
+            <span class="hljs-keyword">int</span> x = q.front(), now= d[x] + <span class="hljs-params">1</span>;    
+            <span class="hljs-title">//now相当于路径长度  </span>
+            <span class="hljs-title">//当now &gt; d[from]时，则表示所有解都找到了  </span>
+            <span class="hljs-keyword">if</span> ((d[from] &gt;= <span class="hljs-params">0</span>)&amp;&amp; (now &gt; d[from]))
+            {
+                <span class="hljs-keyword">break</span>;    
+            }    
+            q.pop();    
+            <span class="hljs-keyword">for</span> (i = <span class="hljs-params">0</span>; i &lt;con[x].size(); ++i)
+            {
+                <span class="hljs-keyword">int</span> y = con[x][i];    
+                <span class="hljs-title">//第一次经过y  </span>
+                <span class="hljs-keyword">if</span> (d[y] &lt; <span class="hljs-params">0</span>)
+                {
+                    d[y] = now;    
+                    q.push(y);    
+                    next[y].push_back(x);    
+                }    
+                <span class="hljs-title">//非第一次经过y  </span>
+                <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (d[y] ==now)
+                {  <span class="hljs-title">//是从上一层经过的，所以要保存</span>
+                    next[y].push_back(x);    
+                }    
+            }    
+        }    
+        <span class="hljs-keyword">if</span> (d[from] &gt;= <span class="hljs-params">0</span>)
+        {  <span class="hljs-title">//有解</span>
+            <span class="hljs-params">vector</span>&lt;<span class="hljs-params">string</span>&gt;path;    
+            help(from, d,word,next, path,answer);    
+        }    
+        <span class="hljs-keyword">return</span> answer;    
+    }    
+};
+</code></pre>
+<h3 id="解法二、双向bfs法" class="calibre9">解法二、双向BFS法</h3>
+<p class="calibre6">BFS需要把每一步搜到的节点都存下来，很有可能每一步的搜到的节点个数越来越多，但最后的目的节点却只有一个。后半段的很多搜索都是白耗时间了。</p>
+<p class="calibre6">上面给出了单向BFS的解法，但看过此前blog中的这篇文章<a href="http://blog.csdn.net/v_JULY_v/article/details/6238029" target="_blank" class="pcalibre2 pcalibre1 calibre7 pcalibre">“A*、Dijkstra、BFS算法性能比较演示”</a>可知：双向BFS性能优于单向BFS。</p>
+<p class="calibre6">举个例子如下，第1步，是起点，1个节点，第2步，搜到2个节点，第3步，搜到4个节点，第4步搜到8个节点，第5步搜到16个节点，并且有一个是终点。那这里共出现了31个节点。从起点开始广搜的同时也从终点开始广搜，就有可能在两头各第3步，就相遇了，出现的节点数不超过(1+2+4)*2=14个，如此就节省了一半以上的搜索时间。</p>
+<p class="calibre6">下面给出双向BFS的解法，参考代码如下：</p>
+<pre class="calibre18"><code class="pcalibre6 pcalibre5 lang-c"><span class="hljs-title">//copyright@fuwutu 6/26/2013  </span>
+<span class="hljs-keyword">class</span> Solution  
+{  
+<span class="hljs-keyword">public</span>:  
+    <span class="hljs-params">vector</span>&lt;<span class="hljs-params">vector</span>&lt;<span class="hljs-params">string</span>&gt;&gt; findLadders(<span class="hljs-params">string</span> start, <span class="hljs-params">string</span> end, <span class="hljs-params">set</span>&lt;<span class="hljs-params">string</span>&gt;&amp; dict)  
+    {  
+        <span class="hljs-params">vector</span>&lt;<span class="hljs-params">vector</span>&lt;<span class="hljs-params">string</span>&gt;&gt; result;  
+        <span class="hljs-keyword">if</span> (dict.erase(start) == <span class="hljs-params">1</span> &amp;&amp; dict.erase(end) == <span class="hljs-params">1</span>)   
+        {  
+            <span class="hljs-params">map</span>&lt;<span class="hljs-params">string</span>, <span class="hljs-params">vector</span>&lt;<span class="hljs-params">string</span>&gt;&gt; kids_from_start;  
+            <span class="hljs-params">map</span>&lt;<span class="hljs-params">string</span>, <span class="hljs-params">vector</span>&lt;<span class="hljs-params">string</span>&gt;&gt; kids_from_end;  
+
+            <span class="hljs-params">set</span>&lt;<span class="hljs-params">string</span>&gt; reach_start;  
+            reach_start.insert(start);  
+            <span class="hljs-params">set</span>&lt;<span class="hljs-params">string</span>&gt; reach_end;  
+            reach_end.insert(end);  
+
+            <span class="hljs-params">set</span>&lt;<span class="hljs-params">string</span>&gt; meet;  
+            <span class="hljs-keyword">while</span> (meet.empty() &amp;&amp; !reach_start.empty() &amp;&amp; !reach_end.empty())  
+            {  
+                <span class="hljs-keyword">if</span> (reach_start.size() &lt; reach_end.size())  
+                {  
+                    search_next_reach(reach_start, reach_end, meet, kids_from_start, dict);  
+                }  
+                <span class="hljs-keyword">else</span>  
+                {  
+                    search_next_reach(reach_end, reach_start, meet, kids_from_end, dict);  
+                }  
+            }  
+
+            <span class="hljs-keyword">if</span> (!meet.empty())  
+            {  
+                <span class="hljs-keyword">for</span> (<span class="hljs-params">set</span>&lt;<span class="hljs-params">string</span>&gt;::iterator it = meet.begin(); it != meet.end(); ++it)  
+                {  
+                    <span class="hljs-params">vector</span>&lt;<span class="hljs-params">string</span>&gt; words(<span class="hljs-params">1</span>, *it);  
+                    result.push_back(words);  
+                }  
+
+                walk(result, kids_from_start);  
+                <span class="hljs-keyword">for</span> (<span class="hljs-keyword">size_t</span> i = <span class="hljs-params">0</span>; i &lt; result.size(); ++i)  
+                {  
+                    reverse(result[i].begin(), result[i].end());  
+                }  
+                walk(result, kids_from_end);  
+            }  
+        }  
+
+        <span class="hljs-keyword">return</span> result;  
+    }  
+
+<span class="hljs-keyword">private</span>:  
+    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">search_next_reach</span><span class="hljs-params">(<span class="hljs-params">set</span>&lt;<span class="hljs-params">string</span>&gt;&amp; reach, <span class="hljs-keyword">const</span> <span class="hljs-params">set</span>&lt;<span class="hljs-params">string</span>&gt;&amp; other_reach, <span class="hljs-params">set</span>&lt;<span class="hljs-params">string</span>&gt;&amp; meet, <span class="hljs-params">map</span>&lt;<span class="hljs-params">string</span>, <span class="hljs-params">vector</span>&lt;<span class="hljs-params">string</span>&gt;&gt;&amp; path, <span class="hljs-params">set</span>&lt;<span class="hljs-params">string</span>&gt;&amp; dict)</span>  
+    </span>{  
+        <span class="hljs-params">set</span>&lt;<span class="hljs-params">string</span>&gt; temp;  
+        reach.swap(temp);  
+
+        <span class="hljs-keyword">for</span> (<span class="hljs-params">set</span>&lt;<span class="hljs-params">string</span>&gt;::iterator it = temp.begin(); it != temp.end(); ++it)  
+        {  
+            <span class="hljs-params">string</span> s = *it;  
+            <span class="hljs-keyword">for</span> (<span class="hljs-keyword">size_t</span> i = <span class="hljs-params">0</span>; i &lt; s.length(); ++i)  
+            {  
+                <span class="hljs-keyword">char</span> back = s[i];  
+                <span class="hljs-keyword">for</span> (s[i] = <span class="hljs-string">'a'</span>; s[i] &lt;= <span class="hljs-string">'z'</span>; ++s[i])  
+                {  
+                    <span class="hljs-keyword">if</span> (s[i] != back)  
+                    {  
+                        <span class="hljs-keyword">if</span> (reach.count(s) == <span class="hljs-params">1</span>)  
+                        {  
+                            path[s].push_back(*it);  
+                        }  
+                        <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (dict.erase(s) == <span class="hljs-params">1</span>)  
+                        {  
+                            path[s].push_back(*it);  
+                            reach.insert(s);  
+                        }  
+                        <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (other_reach.count(s) == <span class="hljs-params">1</span>)  
+                        {  
+                            path[s].push_back(*it);  
+                            reach.insert(s);  
+                            meet.insert(s);  
+                        }  
+                    }  
+                }  
+                s[i] = back;  
+            }  
+        }  
+    }  
+
+    <span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">walk</span><span class="hljs-params">(<span class="hljs-params">vector</span>&lt;<span class="hljs-params">vector</span>&lt;<span class="hljs-params">string</span>&gt;&gt;&amp; all_path, <span class="hljs-params">map</span>&lt;<span class="hljs-params">string</span>, <span class="hljs-params">vector</span>&lt;<span class="hljs-params">string</span>&gt;&gt; kids)</span>  
+    </span>{  
+        <span class="hljs-params">vector</span>&lt;<span class="hljs-params">vector</span>&lt;<span class="hljs-params">string</span>&gt;&gt; temp;  
+        <span class="hljs-keyword">while</span> (!kids[all_path.back().back()].empty())  
+        {  
+            all_path.swap(temp);  
+            all_path.clear();  
+            <span class="hljs-keyword">for</span> (<span class="hljs-params">vector</span>&lt;<span class="hljs-params">vector</span>&lt;<span class="hljs-params">string</span>&gt;&gt;::iterator it = temp.begin(); it != temp.end(); ++it)  
+            {  
+                <span class="hljs-params">vector</span>&lt;<span class="hljs-params">string</span>&gt;&amp; one_path = *it;  
+                <span class="hljs-params">vector</span>&lt;<span class="hljs-params">string</span>&gt;&amp; p = kids[one_path.back()];  
+                <span class="hljs-keyword">for</span> (<span class="hljs-keyword">size_t</span> i = <span class="hljs-params">0</span>; i &lt; p.size(); ++i)  
+                {  
+                    all_path.push_back(one_path);  
+                    all_path.back().push_back(p[i]);  
+                }  
+            }  
+        }  
+    }  
+};
+</code></pre>
+
+            
+            </div>
+        
+    
+</div>
+
+        
+        
+    
+    
+
+</body></html>

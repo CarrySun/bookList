@@ -1,0 +1,50 @@
+<?xml version='1.0' encoding='utf-8'?>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-tw" xml:lang="zh-tw">
+  <head>
+    <title>附录A 语言基础 | 编程之法：面试和算法心得</title>
+    <meta name="description" content=""/>
+    <meta name="generator" content="GitBook 2.6.5"/>
+    <meta name="author" content="wizardforcel"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <link href="stylesheet.css" rel="stylesheet" type="text/css"/>
+<link href="page_styles.css" rel="stylesheet" type="text/css"/>
+</head>
+  <body class="dir">
+        
+        
+<div class="page">
+    
+        <h1 class="book-chapter" id="calibre_toc_62">附录A 语言基础</h1>
+        
+            <div class="section" id="section-">
+            
+                <h2 id="语言基础" class="calibre8">语言基础</h2>
+<p class="calibre6"><strong class="calibre12">1</strong>、C++中虚拟函数的实现机制。</p>
+<p class="calibre6"><strong class="calibre12">2</strong>、指针数组和数组指针的区别。</p>
+<p class="calibre6"><strong class="calibre12">3</strong>、malloc-free和new-delete的区别。</p>
+<p class="calibre6"><strong class="calibre12">4</strong>、sizeof和strlen的区别。</p>
+<p class="calibre6"><strong class="calibre12">5</strong>、描述函数调用的整个过程。</p>
+<p class="calibre6"><strong class="calibre12">6</strong>、C++ STL里面的vector的实现机制，</p>
+<ul class="calibre10">
+<li class="calibre11">当调用push_back成员函数时，怎么实现？<ul class="calibre13">
+<li class="calibre11">内存足则直接 placement new构造对象，否则扩充内存，转移对象，新对象placement new上去。</li>
+</ul>
+</li>
+<li class="calibre11">当调用clear成员函数时，做什么操作，如果要释放内存该怎么做。<ul class="calibre13">
+<li class="calibre11">调用析构函数，内存不释放。 clear没有释放内存，只是将数组中的元素置为空了，释放内存需要delete。</li>
+</ul>
+</li>
+</ul>
+
+            
+            </div>
+        
+    
+</div>
+
+        
+        
+    
+    
+
+</body></html>
