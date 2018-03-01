@@ -108,6 +108,7 @@ function reverseWord(word) {
 /**
  * 测试
  */
+
 reverseWord("I am a student."); //student. a am I
 
 /**
@@ -134,3 +135,6 @@ function reverseArray(arr) {
  * 测试
  */
 reverseArray(getWord("I am a student.")); //student. a am I
+
+
+
